@@ -10,7 +10,6 @@ interface EditorState {
   settings: SurveySettings
   selectedFieldId: string | null
   isDirty: boolean
-  activeTab: 'questions' | 'responses' | 'settings'
 }
 
 type EditorAction =
@@ -25,7 +24,6 @@ type EditorAction =
   | { type: 'UPDATE_SETTINGS'; payload: Partial<SurveySettings> }
   | { type: 'LOAD_SURVEY'; payload: { title: string; description: string; fields: SurveyField[]; settings: SurveySettings } }
   | { type: 'MARK_SAVED' }
-  | { type: 'SET_TAB'; payload: 'questions' | 'responses' | 'settings' }
 
 const initialState: EditorState = {
   title: '未命名问卷',
@@ -34,7 +32,6 @@ const initialState: EditorState = {
   settings: DEFAULT_SETTINGS,
   selectedFieldId: null,
   isDirty: false,
-  activeTab: 'questions',
 }
 
 function editorReducer(state: EditorState, action: EditorAction): EditorState {
@@ -61,13 +58,13 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
         isDirty: true,
       }
     case 'DUPLICATE_FIELD': {
-      const fieldToDup = state.fields.find(f => f.id === action.payload)
-      if (!fieldToDup) return state
-      const newField = { ...fieldToDup, id: action.payload + '_copy' }
+      const src = state.fields.find(f => f.id === action.payload)
+      if (!src) return state
+      const copy = { ...src, id: src.id + '_' + Date.now().toString(36) }
       const idx = state.fields.findIndex(f => f.id === action.payload)
-      const newFields = [...state.fields]
-      newFields.splice(idx + 1, 0, newField)
-      return { ...state, fields: newFields, selectedFieldId: newField.id, isDirty: true }
+      const fields = [...state.fields]
+      fields.splice(idx + 1, 0, copy)
+      return { ...state, fields, selectedFieldId: copy.id, isDirty: true }
     }
     case 'REORDER_FIELDS':
       return { ...state, fields: action.payload, isDirty: true }
@@ -79,8 +76,6 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
       return { ...state, ...action.payload, isDirty: false, selectedFieldId: null }
     case 'MARK_SAVED':
       return { ...state, isDirty: false }
-    case 'SET_TAB':
-      return { ...state, activeTab: action.payload }
     default:
       return state
   }
