@@ -1,28 +1,21 @@
-import { cookies } from 'next/headers'
-import { SignJWT, jwtVerify } from 'jose'
+'use client'
 
-const SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret-change-me-in-prod')
+const AUTH_KEY = 'survey_admin_auth'
 
-export async function createSession(): Promise<string> {
-  const token = await new SignJWT({ role: 'admin' })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setExpirationTime('7d')
-    .sign(SECRET)
-  return token
-}
-
-export async function verifySession(): Promise<boolean> {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('admin_session')?.value
-  if (!token) return false
-  try {
-    await jwtVerify(token, SECRET)
+export function login(password: string): boolean {
+  const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD
+  if (password === adminPassword) {
+    localStorage.setItem(AUTH_KEY, 'true')
     return true
-  } catch {
-    return false
   }
+  return false
 }
 
-export function verifyPassword(password: string): boolean {
-  return password === process.env.ADMIN_PASSWORD
+export function isAuthenticated(): boolean {
+  if (typeof window === 'undefined') return false
+  return localStorage.getItem(AUTH_KEY) === 'true'
+}
+
+export function logout() {
+  localStorage.removeItem(AUTH_KEY)
 }

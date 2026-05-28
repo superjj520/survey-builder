@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { SurveyField, SurveySettings } from '@/lib/types'
 import { getVisibleFields } from '@/lib/logic'
+import { supabase } from '@/lib/supabase'
 import { PageView } from './PageView'
 import { StepView } from './StepView'
 import { Button } from '@/components/ui/button'
@@ -41,19 +42,15 @@ export function SurveyRenderer({ surveyId, fields, settings, title, description 
 
     setSubmitting(true)
     try {
-      const res = await fetch('/api/responses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          survey_id: surveyId,
-          answers,
-          metadata: {
-            userAgent: navigator.userAgent,
-            submittedAt: new Date().toISOString(),
-          },
-        }),
+      const { error } = await supabase.from('responses').insert({
+        survey_id: surveyId,
+        answers,
+        metadata: {
+          userAgent: navigator.userAgent,
+          submittedAt: new Date().toISOString(),
+        },
       })
-      if (res.ok) {
+      if (!error) {
         setSubmitted(true)
       } else {
         alert('提交失败，请重试')
