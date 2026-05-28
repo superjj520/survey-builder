@@ -295,6 +295,133 @@ function renderFieldInput(field: SurveyField, value: unknown, onChange: (v: unkn
     case 'voice':
       return <VoiceField field={field} value={value} onChange={onChange} theme={theme} />
 
+    case 'nps':
+      const npsValue = (value as number) ?? -1
+      return (
+        <div className="space-y-2">
+          <div className="flex gap-1">
+            {Array.from({ length: 11 }).map((_, i) => (
+              <button
+                key={i}
+                onClick={() => onChange(i)}
+                className={`w-9 h-9 rounded-lg text-sm font-medium transition-all ${
+                  npsValue === i
+                    ? 'text-white shadow-md scale-110'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+                style={npsValue === i ? { backgroundColor: theme.primaryColor } : {}}
+              >
+                {i}
+              </button>
+            ))}
+          </div>
+          <div className="flex justify-between text-xs text-gray-400 px-1">
+            <span>{field.npsLeftLabel || '非常不推荐'}</span>
+            <span>{field.npsRightLabel || '非常推荐'}</span>
+          </div>
+        </div>
+      )
+
+    case 'slider':
+      const sliderMin = field.sliderMin ?? 0
+      const sliderMax = field.sliderMax ?? 100
+      const sliderStep = field.sliderStep ?? 1
+      const sliderVal = (value as number) ?? sliderMin
+      return (
+        <div className="space-y-3">
+          <input
+            type="range"
+            min={sliderMin}
+            max={sliderMax}
+            step={sliderStep}
+            value={sliderVal}
+            onChange={(e) => onChange(parseInt(e.target.value))}
+            className="w-full h-2 rounded-full appearance-none cursor-pointer"
+            style={{ accentColor: theme.primaryColor }}
+          />
+          <div className="flex justify-between text-xs text-gray-400">
+            <span>{sliderMin}</span>
+            <span className="text-base font-medium text-gray-700">{sliderVal}</span>
+            <span>{sliderMax}</span>
+          </div>
+        </div>
+      )
+
+    case 'phone':
+      return (
+        <input
+          type="tel"
+          value={(value as string) || ''}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={field.placeholder || '请输入手机号'}
+          className="w-full border-0 border-b-2 border-gray-200 focus:border-purple-500 focus:ring-0 bg-transparent text-base py-2 px-0 placeholder-gray-300 outline-none transition-colors"
+        />
+      )
+
+    case 'email':
+      return (
+        <input
+          type="email"
+          value={(value as string) || ''}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={field.placeholder || '请输入邮箱'}
+          className="w-full border-0 border-b-2 border-gray-200 focus:border-purple-500 focus:ring-0 bg-transparent text-base py-2 px-0 placeholder-gray-300 outline-none transition-colors"
+        />
+      )
+
+    case 'address':
+      return (
+        <textarea
+          value={(value as string) || ''}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={field.placeholder || '请输入详细地址'}
+          rows={2}
+          className="w-full border-0 border-b-2 border-gray-200 focus:border-purple-500 focus:ring-0 bg-transparent resize-none text-base py-2 px-0 placeholder-gray-300 outline-none transition-colors"
+        />
+      )
+
+    case 'image_choice':
+      const imageOpts = field.imageOptions || []
+      const isMulti = field.multiSelect
+      const imgSelected = isMulti ? ((value as string[]) || []) : [value as string]
+      return (
+        <div className="grid grid-cols-2 gap-3">
+          {imageOpts.map((opt) => {
+            const isChosen = imgSelected.includes(opt.id)
+            return (
+              <button
+                key={opt.id}
+                onClick={() => {
+                  if (isMulti) {
+                    const arr = (value as string[]) || []
+                    onChange(isChosen ? arr.filter(x => x !== opt.id) : [...arr, opt.id])
+                  } else {
+                    onChange(opt.id)
+                  }
+                }}
+                className={`rounded-xl overflow-hidden border-2 transition-all text-left ${
+                  isChosen ? 'border-purple-400 shadow-md' : 'border-gray-100 hover:border-gray-200'
+                }`}
+              >
+                {opt.imageUrl ? (
+                  <img src={opt.imageUrl} alt={opt.label} className="w-full h-28 object-cover" />
+                ) : (
+                  <div className="w-full h-28 bg-gray-100 flex items-center justify-center text-gray-300">
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  </div>
+                )}
+                <div className="p-2 flex items-center gap-2">
+                  <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isChosen ? 'border-purple-500' : 'border-gray-300'}`}>
+                    {isChosen && <span className="w-2 h-2 rounded-full" style={{ backgroundColor: theme.primaryColor }} />}
+                  </span>
+                  <span className="text-sm text-gray-700 truncate">{opt.label}</span>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      )
+
     default:
       return <p className="text-gray-400">不支持的字段类型</p>
   }

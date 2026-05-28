@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { ImagePicker } from './Gallery'
 import { ThemeSettings } from '@/lib/types'
 
 export function SettingsPanel() {
@@ -131,20 +132,20 @@ export function SettingsPanel() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm text-gray-600">Logo URL</Label>
-              <Input
-                value={settings.theme.logo || ''}
-                onChange={(e) => updateTheme({ logo: e.target.value || undefined })}
-                placeholder="https://example.com/logo.png"
+              <Label className="text-sm text-gray-600">Logo</Label>
+              <ImagePicker
+                value={settings.theme.logo}
+                onChange={(url) => updateTheme({ logo: url })}
+                label="选择 Logo"
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm text-gray-600">封面图片 URL</Label>
-              <Input
-                value={settings.theme.coverImage || ''}
-                onChange={(e) => updateTheme({ coverImage: e.target.value || undefined })}
-                placeholder="https://example.com/cover.jpg"
+              <Label className="text-sm text-gray-600">封面图片</Label>
+              <ImagePicker
+                value={settings.theme.coverImage}
+                onChange={(url) => updateTheme({ coverImage: url })}
+                label="选择封面图片"
               />
             </div>
 

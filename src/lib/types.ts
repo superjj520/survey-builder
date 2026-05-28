@@ -10,8 +10,14 @@ export type FieldType =
   | 'ranking'
   | 'signature'
   | 'voice'
+  | 'nps'
+  | 'slider'
+  | 'phone'
+  | 'email'
+  | 'image_choice'
+  | 'address'
 
-export type LogicOperator = 'equals' | 'not_equals' | 'contains' | 'is_empty' | 'is_not_empty'
+export type LogicOperator = 'equals' | 'not_equals' | 'contains' | 'is_empty' | 'is_not_empty' | 'greater_than' | 'less_than'
 
 export interface LogicCondition {
   field: string
@@ -21,6 +27,12 @@ export interface LogicCondition {
 
 export interface ShowLogic {
   show_if: LogicCondition
+}
+
+export interface ImageOption {
+  id: string
+  label: string
+  imageUrl: string
 }
 
 export interface SurveyField {
@@ -48,6 +60,16 @@ export interface SurveyField {
   maxFileSize?: number
   // voice specific
   maxDuration?: number
+  // nps specific
+  npsLeftLabel?: string
+  npsRightLabel?: string
+  // slider specific
+  sliderMin?: number
+  sliderMax?: number
+  sliderStep?: number
+  // image choice specific
+  imageOptions?: ImageOption[]
+  multiSelect?: boolean
 }
 
 export interface ThemeSettings {
@@ -94,6 +116,14 @@ export interface FileRecord {
   file_size: number
 }
 
+export interface GalleryImage {
+  id: string
+  url: string
+  name: string
+  size: number
+  created_at: string
+}
+
 export const DEFAULT_THEME: ThemeSettings = {
   primaryColor: '#4F46E5',
   backgroundColor: '#FFFFFF',
@@ -118,4 +148,10 @@ export const FIELD_TYPE_LABELS: Record<FieldType, string> = {
   ranking: '排序题',
   signature: '签名',
   voice: '语音留言',
+  nps: 'NPS评分',
+  slider: '滑块',
+  phone: '手机号',
+  email: '邮箱',
+  image_choice: '图片选择',
+  address: '地址',
 }

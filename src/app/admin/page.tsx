@@ -5,9 +5,10 @@ import { isAuthenticated, login, logout } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { Survey, DEFAULT_SETTINGS } from '@/lib/types'
 import { EditorLayout } from '@/components/editor/EditorLayout'
+import { ShareModal } from '@/components/editor/ShareModal'
+import { GalleryModal } from '@/components/editor/Gallery'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { nanoid } from 'nanoid'
 
 type View = 'login' | 'list' | 'edit'
@@ -74,6 +75,8 @@ function LoginView({ onSuccess }: { onSuccess: () => void }) {
 function ListView({ onNavigate }: { onNavigate: (v: View, id?: string) => void }) {
   const [surveys, setSurveys] = useState<Survey[]>([])
   const [loading, setLoading] = useState(true)
+  const [shareModal, setShareModal] = useState<{ url: string; title: string } | null>(null)
+  const [showGallery, setShowGallery] = useState(false)
 
   const STATUS_MAP = {
     draft: { label: '草稿', color: 'bg-gray-100 text-gray-600' },
@@ -105,10 +108,9 @@ function ListView({ onNavigate }: { onNavigate: (v: View, id?: string) => void }
     setSurveys(surveys.map((s) => s.id === survey.id ? { ...s, status: newStatus as Survey['status'] } : s))
   }
 
-  const copyLink = (shareId: string) => {
-    const url = `${window.location.origin}/s/?id=${shareId}`
-    navigator.clipboard.writeText(url)
-    alert('链接已复制到剪贴板')
+  const openShare = (survey: Survey) => {
+    const url = `${window.location.origin}/s/?id=${survey.share_id}`
+    setShareModal({ url, title: survey.title })
   }
 
   if (loading) {
@@ -151,12 +153,20 @@ function ListView({ onNavigate }: { onNavigate: (v: View, id?: string) => void }
             <h2 className="text-2xl font-bold text-gray-800">我的问卷</h2>
             <p className="text-sm text-gray-400 mt-1">{surveys.length} 份问卷</p>
           </div>
-          <Button onClick={createSurvey} className="h-10 px-5 bg-indigo-600 hover:bg-indigo-700 gap-1.5 rounded-lg shadow-sm">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-            </svg>
-            新建问卷
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setShowGallery(true)} className="h-10 gap-1.5 rounded-lg">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              图库
+            </Button>
+            <Button onClick={createSurvey} className="h-10 px-5 bg-indigo-600 hover:bg-indigo-700 gap-1.5 rounded-lg shadow-sm">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+              </svg>
+              新建问卷
+            </Button>
+          </div>
         </div>
 
         {/* Survey grid */}
@@ -213,10 +223,10 @@ function ListView({ onNavigate }: { onNavigate: (v: View, id?: string) => void }
                   {/* Action buttons */}
                   <div className="flex gap-2 pt-3 border-t border-gray-50" onClick={(e) => e.stopPropagation()}>
                     <button
-                      onClick={() => copyLink(survey.share_id)}
+                      onClick={() => openShare(survey)}
                       className="flex-1 text-xs py-1.5 rounded-md bg-gray-50 hover:bg-indigo-50 text-gray-500 hover:text-indigo-600 transition-colors"
                     >
-                      复制链接
+                      分享
                     </button>
                     <button
                       onClick={() => toggleStatus(survey)}
@@ -248,6 +258,12 @@ function ListView({ onNavigate }: { onNavigate: (v: View, id?: string) => void }
           </div>
         )}
       </div>
+
+      {/* Modals */}
+      {shareModal && (
+        <ShareModal open={true} onClose={() => setShareModal(null)} shareUrl={shareModal.url} title={shareModal.title} />
+      )}
+      <GalleryModal open={showGallery} onClose={() => setShowGallery(false)} onSelect={() => setShowGallery(false)} />
     </div>
   )
 }

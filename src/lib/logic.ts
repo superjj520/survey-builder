@@ -19,6 +19,10 @@ export function evaluateCondition(
         return value.includes(condition.value as string)
       }
       return false
+    case 'greater_than':
+      return Number(value) > Number(condition.value)
+    case 'less_than':
+      return Number(value) < Number(condition.value)
     case 'is_empty':
       return value === undefined || value === null || value === '' ||
         (Array.isArray(value) && value.length === 0)

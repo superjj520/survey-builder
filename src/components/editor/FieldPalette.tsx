@@ -16,6 +16,12 @@ const FIELD_ICONS: Record<FieldType, string> = {
   ranking: '↕',
   signature: '✍',
   voice: '🎙',
+  nps: '📏',
+  slider: '⊶',
+  phone: '📱',
+  email: '✉',
+  image_choice: '🖼',
+  address: '📍',
 }
 
 function createField(type: FieldType): SurveyField {
@@ -41,6 +47,12 @@ function createField(type: FieldType): SurveyField {
       return { ...base, multiline: false }
     case 'voice':
       return { ...base, maxDuration: 60 }
+    case 'nps':
+      return { ...base, npsLeftLabel: '非常不推荐', npsRightLabel: '非常推荐' }
+    case 'slider':
+      return { ...base, sliderMin: 0, sliderMax: 100, sliderStep: 1 }
+    case 'image_choice':
+      return { ...base, imageOptions: [{ id: nanoid(6), label: '选项 1', imageUrl: '' }], multiSelect: false }
     default:
       return base
   }
