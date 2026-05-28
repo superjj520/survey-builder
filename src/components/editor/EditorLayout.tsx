@@ -18,8 +18,11 @@ interface EditorLayoutProps {
 function EditorContent({ onSave, onBack, surveyId }: { onSave: EditorLayoutProps['onSave']; onBack?: () => void; surveyId?: string }) {
   const { state, dispatch } = useEditor()
   const [activeTab, setActiveTab] = useState<'questions' | 'responses' | 'settings'>('questions')
+  const [saving, setSaving] = useState(false)
+  const [lastSaved, setLastSaved] = useState<string | null>(null)
 
   const handleSave = async () => {
+    setSaving(true)
     await onSave({
       title: state.title,
       description: state.description,
@@ -27,7 +30,16 @@ function EditorContent({ onSave, onBack, surveyId }: { onSave: EditorLayoutProps
       settings: state.settings,
     })
     dispatch({ type: 'MARK_SAVED' })
+    setSaving(false)
+    setLastSaved(new Date().toLocaleTimeString())
   }
+
+  // Auto-save every 30 seconds if dirty
+  useEffect(() => {
+    if (!state.isDirty) return
+    const timer = setTimeout(() => { handleSave() }, 30000)
+    return () => clearTimeout(timer)
+  }, [state.isDirty, state.fields, state.title, state.description, state.settings])
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
@@ -50,9 +62,10 @@ function EditorContent({ onSave, onBack, surveyId }: { onSave: EditorLayoutProps
             />
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
+            {lastSaved && !state.isDirty && <span className="text-xs text-gray-400">已保存 {lastSaved}</span>}
             {state.isDirty && <span className="text-xs text-amber-500">未保存</span>}
-            <Button onClick={handleSave} disabled={!state.isDirty} size="sm" className="bg-indigo-600 hover:bg-indigo-700">
-              {state.isDirty ? '保存' : '已保存'}
+            <Button onClick={handleSave} disabled={!state.isDirty || saving} size="sm" className="bg-indigo-600 hover:bg-indigo-700">
+              {saving ? '保存中...' : state.isDirty ? '保存' : '已保存'}
             </Button>
           </div>
         </div>

@@ -20,10 +20,14 @@ function SurveyContent() {
       .from('surveys')
       .select('*')
       .eq('share_id', shareId)
-      .eq('status', 'published')
       .single()
       .then(({ data }) => {
-        if (data) { setSurvey(data as Survey) } else { setNotFound(true) }
+        if (data) {
+          const s = data as Survey
+          if (s.status === 'closed') { setNotFound(true) }
+          else if (s.status === 'draft') { setNotFound(true) }
+          else { setSurvey(s) }
+        } else { setNotFound(true) }
         setLoading(false)
       })
   }, [shareId])

@@ -43,6 +43,12 @@ export function SurveyRenderer({ surveyId, fields, settings, title, description 
 
     setSubmitting(true)
     try {
+      // Prevent duplicate submissions
+      const submitKey = `survey_submitted_${surveyId}`
+      if (sessionStorage.getItem(submitKey)) {
+        setSubmitted(true)
+        return
+      }
       const { error } = await supabase.from('responses').insert({
         survey_id: surveyId,
         answers,
@@ -52,6 +58,7 @@ export function SurveyRenderer({ surveyId, fields, settings, title, description 
         },
       })
       if (!error) {
+        sessionStorage.setItem(submitKey, 'true')
         setSubmitted(true)
       } else {
         alert('提交失败，请重试')
