@@ -1,10 +1,10 @@
 'use client'
 
 const AUTH_KEY = 'survey_admin_auth'
+const ADMIN_PASSWORD = 'Jj23456*'
 
 export function login(password: string): boolean {
-  const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD
-  if (password === adminPassword) {
+  if (password === ADMIN_PASSWORD) {
     localStorage.setItem(AUTH_KEY, 'true')
     return true
   }
