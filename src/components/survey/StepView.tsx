@@ -18,6 +18,7 @@ interface StepViewProps {
 
 export function StepView({ fields, answers, setAnswers, onSubmit, submitting, title, description, theme }: StepViewProps) {
   const [currentStep, setCurrentStep] = useState(0)
+  const [direction, setDirection] = useState<'next' | 'prev'>('next')
   const totalSteps = fields.length
 
   const updateAnswer = (fieldId: string, value: unknown) => {
@@ -37,36 +38,49 @@ export function StepView({ fields, answers, setAnswers, onSubmit, submitting, ti
       }
     }
     if (currentStep < totalSteps - 1) {
+      setDirection('next')
       setCurrentStep(currentStep + 1)
     } else {
       onSubmit()
     }
   }
 
+  const handlePrev = () => {
+    if (currentStep > 0) {
+      setDirection('prev')
+      setCurrentStep(currentStep - 1)
+    }
+  }
+
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: theme.backgroundColor }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#f0ebf8' }}>
       {/* Progress bar */}
-      <div className="h-1 bg-gray-200">
+      <div className="h-1.5 bg-gray-200/50">
         <div
-          className="h-full transition-all duration-300"
+          className="h-full transition-all duration-500 ease-out rounded-r-full"
           style={{ width: `${progress}%`, backgroundColor: theme.primaryColor }}
         />
       </div>
 
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="max-w-xl w-full">
-          {currentStep === 0 && (
-            <div className="mb-8">
-              <h1 className="text-2xl font-bold mb-2">{title}</h1>
-              {description && <p className="text-gray-500">{description}</p>}
-            </div>
-          )}
-
-          <div className="bg-white rounded-lg shadow-sm border p-8">
-            <div className="text-sm text-gray-400 mb-4">
+          {/* Step counter */}
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm text-gray-400 font-medium">
               {currentStep + 1} / {totalSteps}
-            </div>
+            </span>
+            <span className="text-xs text-gray-300">
+              {Math.round(progress)}% 已完成
+            </span>
+          </div>
 
+          {/* Field card with animation */}
+          <div
+            key={currentStep}
+            className={`transform transition-all duration-300 ease-out ${
+              direction === 'next' ? 'animate-slideInRight' : 'animate-slideInLeft'
+            }`}
+          >
             <FieldRenderer
               field={currentField}
               value={answers[currentField.id]}
@@ -75,22 +89,29 @@ export function StepView({ fields, answers, setAnswers, onSubmit, submitting, ti
             />
           </div>
 
+          {/* Navigation */}
           <div className="flex justify-between mt-6">
             <Button
               variant="outline"
-              onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+              onClick={handlePrev}
               disabled={currentStep === 0}
+              className="h-11 px-6 rounded-full border-gray-200 text-gray-600 hover:bg-white disabled:opacity-30"
             >
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/></svg>
               上一步
             </Button>
             <Button
               onClick={handleNext}
               disabled={submitting}
+              className="h-11 px-6 rounded-full text-white shadow-md hover:shadow-lg transition-all"
               style={{ backgroundColor: theme.primaryColor }}
             >
               {currentStep === totalSteps - 1
                 ? submitting ? '提交中...' : '提交'
                 : '下一步'}
+              {currentStep < totalSteps - 1 && (
+                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
+              )}
             </Button>
           </div>
         </div>

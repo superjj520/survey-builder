@@ -51,6 +51,28 @@ export function FieldConfig() {
         <Switch checked={field.required} onCheckedChange={(checked) => update({ required: checked })} />
       </div>
 
+      {/* Guide content */}
+      <div className="space-y-3 border-t pt-4">
+        <Label className="text-xs text-gray-500">图文引导</Label>
+        <div className="space-y-2">
+          <Label>引导图片 URL</Label>
+          <Input
+            value={field.guideImage || ''}
+            onChange={(e) => update({ guideImage: e.target.value || undefined })}
+            placeholder="https://example.com/image.png"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>引导说明文字</Label>
+          <Textarea
+            value={field.guideText || ''}
+            onChange={(e) => update({ guideText: e.target.value || undefined })}
+            placeholder="帮助答题者理解题目的说明文字"
+            rows={3}
+          />
+        </div>
+      </div>
+
       {/* Type-specific config */}
       {renderTypeConfig(field, update)}
 
@@ -127,6 +149,19 @@ function renderTypeConfig(field: SurveyField, update: (u: Partial<SurveyField>) 
             value={field.acceptedTypes || ''}
             onChange={(e) => update({ acceptedTypes: e.target.value })}
             placeholder="例如: .pdf,.jpg,.png"
+          />
+        </div>
+      )
+    case 'voice':
+      return (
+        <div className="space-y-2">
+          <Label>最长录音时间（秒）</Label>
+          <Input
+            type="number"
+            min={10}
+            max={300}
+            value={field.maxDuration || 60}
+            onChange={(e) => update({ maxDuration: parseInt(e.target.value) })}
           />
         </div>
       )

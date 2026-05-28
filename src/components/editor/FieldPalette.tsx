@@ -15,6 +15,7 @@ const FIELD_ICONS: Record<FieldType, string> = {
   matrix: '▦',
   ranking: '↕',
   signature: '✍',
+  voice: '🎙',
 }
 
 function createField(type: FieldType): SurveyField {
@@ -38,6 +39,8 @@ function createField(type: FieldType): SurveyField {
       return { ...base, options: ['项目 1', '项目 2', '项目 3'] }
     case 'text':
       return { ...base, multiline: false }
+    case 'voice':
+      return { ...base, maxDuration: 60 }
     default:
       return base
   }

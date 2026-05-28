@@ -9,6 +9,7 @@ export type FieldType =
   | 'matrix'
   | 'ranking'
   | 'signature'
+  | 'voice'
 
 export type LogicOperator = 'equals' | 'not_equals' | 'contains' | 'is_empty' | 'is_not_empty'
 
@@ -31,6 +32,9 @@ export interface SurveyField {
   options?: string[]
   placeholder?: string
   logic?: ShowLogic
+  // guide content
+  guideImage?: string
+  guideText?: string
   // text specific
   multiline?: boolean
   maxLength?: number
@@ -42,6 +46,8 @@ export interface SurveyField {
   // file specific
   acceptedTypes?: string
   maxFileSize?: number
+  // voice specific
+  maxDuration?: number
 }
 
 export interface ThemeSettings {
@@ -111,4 +117,5 @@ export const FIELD_TYPE_LABELS: Record<FieldType, string> = {
   matrix: '矩阵题',
   ranking: '排序题',
   signature: '签名',
+  voice: '语音留言',
 }
