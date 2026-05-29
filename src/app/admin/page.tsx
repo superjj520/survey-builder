@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { isAuthenticated, login, register, logout, resetPassword, getSession, getProfile } from '@/lib/auth'
+import { isAuthenticated, login, register, logout, resetPassword, getSession, getProfile, getCurrentUserId } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { Survey, Profile, DEFAULT_SETTINGS } from '@/lib/types'
 import { EditorLayout } from '@/components/editor/EditorLayout'
@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { nanoid } from 'nanoid'
+import { toast } from 'sonner'
 
 type View = 'login' | 'list' | 'edit'
 
@@ -208,7 +209,14 @@ function ListView({ onNavigate, profile }: { onNavigate: (v: View, id?: string) 
 
   useEffect(() => {
     supabase.from('surveys').select('*').order('created_at', { ascending: false })
-      .then(({ data }) => { setSurveys((data || []) as Survey[]); setLoading(false) })
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('Load surveys error:', error)
+          toast.error(`加载失败: ${error.message}`)
+        }
+        setSurveys((data || []) as Survey[])
+        setLoading(false)
+      })
   }, [])
 
   const filteredSurveys = surveys.filter(s => {
@@ -218,11 +226,19 @@ function ListView({ onNavigate, profile }: { onNavigate: (v: View, id?: string) 
   })
 
   const createSurvey = async () => {
-    const session = await getSession()
-    const { data } = await supabase.from('surveys').insert({
+    const userId = await getCurrentUserId()
+    if (!userId) {
+      console.error('No user id when creating survey')
+      return
+    }
+    const { data, error } = await supabase.from('surveys').insert({
       title: '未命名问卷', description: '', fields: [], settings: DEFAULT_SETTINGS, status: 'draft', share_id: nanoid(8),
-      user_id: session?.user?.id,
+      user_id: userId,
     }).select().single()
+    if (error) {
+      console.error('Create survey error:', error)
+      return
+    }
     if (data) onNavigate('edit', data.id)
   }
 
@@ -240,7 +256,7 @@ function ListView({ onNavigate, profile }: { onNavigate: (v: View, id?: string) 
   }
 
   const duplicateSurvey = async (survey: Survey) => {
-    const session = await getSession()
+    const userId = await getCurrentUserId()
     const { data } = await supabase.from('surveys').insert({
       title: `${survey.title} (副本)`,
       description: survey.description,
@@ -248,7 +264,7 @@ function ListView({ onNavigate, profile }: { onNavigate: (v: View, id?: string) 
       settings: survey.settings,
       status: 'draft',
       share_id: nanoid(8),
-      user_id: session?.user?.id,
+      user_id: userId,
     }).select().single()
     if (data) setSurveys([data as Survey, ...surveys])
   }
