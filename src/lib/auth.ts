@@ -4,8 +4,11 @@ import { Session } from '@supabase/supabase-js'
 import { supabaseClient, supabase } from './supabase'
 import { Profile } from './types'
 
+// Use the same client instance as supabase.ts so auth session is shared
+const getAuthClient = () => supabaseClient.client
+
 export async function login(email: string, password: string): Promise<{ success: boolean; error?: string }> {
-  const { error } = await supabaseClient.client.auth.signInWithPassword({ email, password })
+  const { error } = await getAuthClient().auth.signInWithPassword({ email, password })
   if (error) {
     return { success: false, error: error.message }
   }
@@ -17,7 +20,7 @@ export async function register(
   password: string,
   displayName: string
 ): Promise<{ success: boolean; error?: string; needsVerification?: boolean }> {
-  const { error } = await supabaseClient.client.auth.signUp({
+  const { error } = await getAuthClient().auth.signUp({
     email,
     password,
     options: {
@@ -31,7 +34,7 @@ export async function register(
 }
 
 export async function resetPassword(email: string): Promise<{ success: boolean; error?: string }> {
-  const { error } = await supabaseClient.client.auth.resetPasswordForEmail(email, {
+  const { error } = await getAuthClient().auth.resetPasswordForEmail(email, {
     redirectTo: `${typeof window !== 'undefined' ? window.location.origin : ''}/admin/`,
   })
   if (error) {
@@ -41,12 +44,12 @@ export async function resetPassword(email: string): Promise<{ success: boolean; 
 }
 
 export async function isAuthenticated(): Promise<boolean> {
-  const { data } = await supabaseClient.client.auth.getSession()
+  const { data } = await getAuthClient().auth.getSession()
   return !!data.session
 }
 
 export async function getSession(): Promise<Session | null> {
-  const { data } = await supabaseClient.client.auth.getSession()
+  const { data } = await getAuthClient().auth.getSession()
   return data.session
 }
 
@@ -66,5 +69,5 @@ export async function updateProfile(updates: Partial<Pick<Profile, 'display_name
 }
 
 export async function logout() {
-  await supabaseClient.client.auth.signOut()
+  await getAuthClient().auth.signOut()
 }
