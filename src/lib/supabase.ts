@@ -1,3 +1,5 @@
+'use client'
+
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = 'https://ybyputkhtrejnqyblvdc.supabase.co'
@@ -5,13 +7,26 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 let _supabase: SupabaseClient | null = null
 
-function getClient() {
+function getClient(): SupabaseClient {
   if (!_supabase) {
-    _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+      },
+    })
   }
   return _supabase
 }
 
+// Export the full client for auth operations
+export const supabaseClient = {
+  get client() {
+    return getClient()
+  }
+}
+
+// Convenience wrappers (backwards compatible)
 export const supabase = {
   from(table: string) {
     return getClient().from(table)

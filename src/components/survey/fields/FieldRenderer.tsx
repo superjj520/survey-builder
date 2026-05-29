@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { toast } from 'sonner'
 import { SurveyField, ThemeSettings } from '@/lib/types'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
@@ -9,9 +10,39 @@ interface FieldRendererProps {
   value: unknown
   onChange: (value: unknown) => void
   theme: ThemeSettings
+  questionNumber?: string | number
 }
 
-export function FieldRenderer({ field, value, onChange, theme }: FieldRendererProps) {
+export function FieldRenderer({ field, value, onChange, theme, questionNumber }: FieldRendererProps) {
+  // Section type renders differently — no input, just a visual header
+  if (field.type === 'section') {
+    return (
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100">
+        <div className="h-2 w-full" style={{ backgroundColor: theme.primaryColor }} />
+        <div className="p-6">
+          <h2 className="text-xl font-bold text-gray-900">{field.label}</h2>
+          {field.description && (
+            <p className="text-sm text-gray-500 mt-2 leading-relaxed">{field.description}</p>
+          )}
+          {(field.guideImage || field.guideText) && (
+            <div className="mt-4 p-4 rounded-lg bg-blue-50 border border-blue-100">
+              {field.guideImage && (
+                <img
+                  src={field.guideImage}
+                  alt="引导图片"
+                  className="w-full max-h-48 object-contain rounded-md mb-3"
+                />
+              )}
+              {field.guideText && (
+                <p className="text-sm text-blue-700 leading-relaxed">{field.guideText}</p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100">
       {/* Left accent bar via border */}
@@ -19,6 +50,7 @@ export function FieldRenderer({ field, value, onChange, theme }: FieldRendererPr
         {/* Label + required */}
         <div className="mb-1">
           <h3 className="text-base font-medium text-gray-800 leading-relaxed">
+            {questionNumber && <span className="text-gray-400 mr-1.5">{questionNumber}.</span>}
             {field.label}
             {field.required && <span className="text-red-500 ml-1">*</span>}
           </h3>
@@ -157,16 +189,16 @@ function renderFieldInput(field: SurveyField, value: unknown, onChange: (v: unkn
     case 'rating':
       const maxRating = field.maxRating || 5
       const currentRating = (value as number) || 0
+      const iconType = field.ratingIcon || 'star'
       return (
-        <div className="flex gap-3 py-2">
+        <div className="flex gap-1.5 sm:gap-2 py-2 flex-wrap">
           {Array.from({ length: maxRating }, (_, i) => i + 1).map((star) => (
             <button
               key={star}
-              onClick={() => onChange(star)}
-              className="text-4xl transition-all hover:scale-125 active:scale-95"
-              style={{ color: star <= currentRating ? theme.primaryColor : '#e5e7eb' }}
+              onClick={() => onChange(star === currentRating ? 0 : star)}
+              className="w-8 h-8 sm:w-10 sm:h-10 transition-all hover:scale-125 active:scale-90"
             >
-              ★
+              <RatingIcon type={iconType} filled={star <= currentRating} color={theme.primaryColor} />
             </button>
           ))}
           {currentRating > 0 && (
@@ -299,12 +331,12 @@ function renderFieldInput(field: SurveyField, value: unknown, onChange: (v: unkn
       const npsValue = (value as number) ?? -1
       return (
         <div className="space-y-2">
-          <div className="flex gap-1">
+          <div className="grid grid-cols-6 sm:grid-cols-11 gap-1.5 sm:gap-1">
             {Array.from({ length: 11 }).map((_, i) => (
               <button
                 key={i}
                 onClick={() => onChange(i)}
-                className={`w-9 h-9 rounded-lg text-sm font-medium transition-all ${
+                className={`h-9 rounded-lg text-sm font-medium transition-all ${
                   npsValue === i
                     ? 'text-white shadow-md scale-110'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -349,24 +381,12 @@ function renderFieldInput(field: SurveyField, value: unknown, onChange: (v: unkn
 
     case 'phone':
       return (
-        <input
-          type="tel"
-          value={(value as string) || ''}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={field.placeholder || '请输入手机号'}
-          className="w-full border-0 border-b-2 border-gray-200 focus:border-purple-500 focus:ring-0 bg-transparent text-base py-2 px-0 placeholder-gray-300 outline-none transition-colors"
-        />
+        <PhoneInput value={(value as string) || ''} onChange={onChange} placeholder={field.placeholder || '请输入手机号'} />
       )
 
     case 'email':
       return (
-        <input
-          type="email"
-          value={(value as string) || ''}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={field.placeholder || '请输入邮箱'}
-          className="w-full border-0 border-b-2 border-gray-200 focus:border-purple-500 focus:ring-0 bg-transparent text-base py-2 px-0 placeholder-gray-300 outline-none transition-colors"
-        />
+        <EmailInput value={(value as string) || ''} onChange={onChange} placeholder={field.placeholder || '请输入邮箱'} />
       )
 
     case 'address':
@@ -385,7 +405,7 @@ function renderFieldInput(field: SurveyField, value: unknown, onChange: (v: unkn
       const isMulti = field.multiSelect
       const imgSelected = isMulti ? ((value as string[]) || []) : [value as string]
       return (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 sm:gap-3">
           {imageOpts.map((opt) => {
             const isChosen = imgSelected.includes(opt.id)
             return (
@@ -569,7 +589,7 @@ function VoiceField({ field, value, onChange, theme }: { field: SurveyField; val
         })
       }, 1000)
     } catch {
-      alert('无法访问麦克风，请检查浏览器权限')
+      toast.error('无法访问麦克风，请检查浏览器权限')
     }
   }
 
@@ -655,4 +675,113 @@ function VoiceField({ field, value, onChange, theme }: { field: SurveyField; val
       )}
     </div>
   )
+}
+
+// Phone input with validation
+function PhoneInput({ value, onChange, placeholder }: { value: string; onChange: (v: unknown) => void; placeholder: string }) {
+  const [touched, setTouched] = useState(false)
+  const isValid = !value || /^1[3-9]\d{9}$/.test(value)
+
+  return (
+    <div>
+      <input
+        type="tel"
+        value={value}
+        onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, 11))}
+        onBlur={() => setTouched(true)}
+        placeholder={placeholder}
+        className={`w-full border-0 border-b-2 ${touched && !isValid ? 'border-red-400' : 'border-gray-200 focus:border-purple-500'} focus:ring-0 bg-transparent text-base py-2 px-0 placeholder-gray-300 outline-none transition-colors`}
+      />
+      {touched && !isValid && value && (
+        <p className="text-xs text-red-500 mt-1">请输入正确的手机号</p>
+      )}
+    </div>
+  )
+}
+
+// Email input with validation
+function EmailInput({ value, onChange, placeholder }: { value: string; onChange: (v: unknown) => void; placeholder: string }) {
+  const [touched, setTouched] = useState(false)
+  const isValid = !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+
+  return (
+    <div>
+      <input
+        type="email"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={() => setTouched(true)}
+        placeholder={placeholder}
+        className={`w-full border-0 border-b-2 ${touched && !isValid ? 'border-red-400' : 'border-gray-200 focus:border-purple-500'} focus:ring-0 bg-transparent text-base py-2 px-0 placeholder-gray-300 outline-none transition-colors`}
+      />
+      {touched && !isValid && value && (
+        <p className="text-xs text-red-500 mt-1">请输入正确的邮箱地址</p>
+      )}
+    </div>
+  )
+}
+
+// Rating icon component - filled/outlined SVG pairs
+function RatingIcon({ type, filled, color }: { type: string; filled: boolean; color: string }) {
+  const fillColor = filled ? color : 'none'
+  const strokeColor = filled ? color : '#d1d5db'
+
+  switch (type) {
+    case 'star':
+      return (
+        <svg viewBox="0 0 24 24" fill={fillColor} stroke={strokeColor} strokeWidth={1.5} className="w-full h-full">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+        </svg>
+      )
+    case 'heart':
+      return (
+        <svg viewBox="0 0 24 24" fill={fillColor} stroke={strokeColor} strokeWidth={1.5} className="w-full h-full">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+        </svg>
+      )
+    case 'thumb':
+      return (
+        <svg viewBox="0 0 24 24" fill={fillColor} stroke={strokeColor} strokeWidth={1.5} className="w-full h-full">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6.633 10.5c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75A2.25 2.25 0 0116.5 4.5c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H14.23c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 00-1.423-.23H5.904M14.25 9h2.25M5.904 18.75c.083.228.22.442.396.632a2.25 2.25 0 001.6.668h.004c.803 0 1.484-.586 1.677-1.378l.063-.258c.152-.618.006-1.272-.394-1.752a2.062 2.062 0 00-.703-.552M5.904 18.75H4.5a2.25 2.25 0 01-2.25-2.25v-6.75a2.25 2.25 0 012.25-2.25h1.404" />
+        </svg>
+      )
+    case 'check':
+      return (
+        <svg viewBox="0 0 24 24" fill={fillColor} stroke={strokeColor} strokeWidth={1.5} className="w-full h-full">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      )
+    case 'dog':
+      return filled ? (
+        <svg viewBox="0 0 1024 1024" fill={color} className="w-full h-full">
+          <path d="M827.2 356.8c-3.2-22.4-9.6-44.8-19.2-64-9.6-25.6-22.4-48-38.4-67.2-6.4-6.4-12.8-16-22.4-22.4l-3.2-3.2c-6.4 19.2-16 35.2-28.8 51.2-16 16-35.2 28.8-57.6 35.2-22.4 6.4-44.8 6.4-67.2 0-22.4-6.4-41.6-19.2-57.6-35.2-16-16-28.8-35.2-35.2-57.6-6.4-22.4-6.4-44.8 0-67.2 6.4-22.4 19.2-41.6 35.2-57.6 9.6-9.6 22.4-19.2 35.2-25.6-32-6.4-64-6.4-96 0-28.8 6.4-57.6 16-83.2 32-25.6 16-48 35.2-67.2 57.6-12.8 16-22.4 32-32 51.2-6.4 12.8-9.6 25.6-16 38.4-3.2 12.8-6.4 25.6-9.6 38.4-3.2 19.2-3.2 38.4-3.2 57.6 0 16 0 32 3.2 48 6.4 44.8 22.4 89.6 44.8 128 16 28.8 35.2 54.4 57.6 76.8 3.2 3.2 3.2 6.4 3.2 9.6v201.6c0 9.6 3.2 16 9.6 22.4 6.4 6.4 16 9.6 22.4 9.6h54.4c9.6 0 16-3.2 22.4-9.6 6.4-6.4 9.6-16 9.6-22.4v-48h86.4v48c0 9.6 3.2 16 9.6 22.4 6.4 6.4 16 9.6 22.4 9.6h54.4c9.6 0 16-3.2 22.4-9.6 6.4-6.4 9.6-16 9.6-22.4V560c0-3.2 0-6.4 3.2-9.6 22.4-22.4 41.6-48 57.6-76.8 16-28.8 25.6-57.6 32-89.6 0-9.6 0-19.2 0-28.8z M444.8 480c-19.2 0-35.2-16-35.2-35.2s16-35.2 35.2-35.2 35.2 16 35.2 35.2-16 35.2-35.2 35.2z M636.8 480c-19.2 0-35.2-16-35.2-35.2s16-35.2 35.2-35.2 35.2 16 35.2 35.2-16 35.2-35.2 35.2z"/>
+        </svg>
+      ) : (
+        <svg viewBox="0 0 1024 1024" fill="none" stroke={strokeColor} strokeWidth={48} className="w-full h-full">
+          <path d="M827.2 356.8c-3.2-22.4-9.6-44.8-19.2-64-9.6-25.6-22.4-48-38.4-67.2-6.4-6.4-12.8-16-22.4-22.4l-3.2-3.2c-6.4 19.2-16 35.2-28.8 51.2-16 16-35.2 28.8-57.6 35.2-22.4 6.4-44.8 6.4-67.2 0-22.4-6.4-41.6-19.2-57.6-35.2-16-16-28.8-35.2-35.2-57.6-6.4-22.4-6.4-44.8 0-67.2 6.4-22.4 19.2-41.6 35.2-57.6 9.6-9.6 22.4-19.2 35.2-25.6-32-6.4-64-6.4-96 0-28.8 6.4-57.6 16-83.2 32-25.6 16-48 35.2-67.2 57.6-12.8 16-22.4 32-32 51.2-6.4 12.8-9.6 25.6-16 38.4-3.2 12.8-6.4 25.6-9.6 38.4-3.2 19.2-3.2 38.4-3.2 57.6 0 16 0 32 3.2 48 6.4 44.8 22.4 89.6 44.8 128 16 28.8 35.2 54.4 57.6 76.8 3.2 3.2 3.2 6.4 3.2 9.6v201.6c0 9.6 3.2 16 9.6 22.4 6.4 6.4 16 9.6 22.4 9.6h54.4c9.6 0 16-3.2 22.4-9.6 6.4-6.4 9.6-16 9.6-22.4v-48h86.4v48c0 9.6 3.2 16 9.6 22.4 6.4 6.4 16 9.6 22.4 9.6h54.4c9.6 0 16-3.2 22.4-9.6 6.4-6.4 9.6-16 9.6-22.4V560c0-3.2 0-6.4 3.2-9.6 22.4-22.4 41.6-48 57.6-76.8 16-28.8 25.6-57.6 32-89.6 0-9.6 0-19.2 0-28.8z"/>
+          <circle cx="444.8" cy="444.8" r="35.2" fill={strokeColor}/>
+          <circle cx="636.8" cy="444.8" r="35.2" fill={strokeColor}/>
+        </svg>
+      )
+    case 'cat':
+      return filled ? (
+        <svg viewBox="0 0 1024 1024" fill={color} className="w-full h-full">
+          <path d="M816 192l-48 272c0 141.6-114.4 256-256 256S256 605.6 256 464L208 192l144 80c48-32 102.4-48 160-48s112 16 160 48l144-80zM416 480c0 19.2 12.8 32 32 32s32-12.8 32-32-12.8-32-32-32-32 12.8-32 32z m192 0c0 19.2-12.8 32-32 32s-32-12.8-32-32 12.8-32 32-32 32 12.8 32 32z m-64 64c0 0-16 32-32 32s-32-32-32-32h64z M512 784c64 0 121.6-25.6 163.2-67.2l38.4 38.4C665.6 803.2 592 832 512 832s-153.6-28.8-201.6-76.8l38.4-38.4C390.4 758.4 448 784 512 784z"/>
+        </svg>
+      ) : (
+        <svg viewBox="0 0 1024 1024" fill="none" stroke={strokeColor} strokeWidth={48} className="w-full h-full">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M816 192l-48 272c0 141.6-114.4 256-256 256S256 605.6 256 464L208 192l144 80c48-32 102.4-48 160-48s112 16 160 48l144-80z"/>
+          <circle cx="432" cy="480" r="32" fill={strokeColor}/>
+          <circle cx="592" cy="480" r="32" fill={strokeColor}/>
+          <path strokeLinecap="round" d="M480 544s16 32 32 32 32-32 32-32"/>
+          <path strokeLinecap="round" d="M512 784c64 0 121.6-25.6 163.2-67.2M512 784c-64 0-121.6-25.6-163.2-67.2"/>
+        </svg>
+      )
+    default:
+      return (
+        <svg viewBox="0 0 24 24" fill={fillColor} stroke={strokeColor} strokeWidth={1.5} className="w-full h-full">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+        </svg>
+      )
+  }
 }

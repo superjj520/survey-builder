@@ -16,6 +16,7 @@ export type FieldType =
   | 'email'
   | 'image_choice'
   | 'address'
+  | 'section'
 
 export type LogicOperator = 'equals' | 'not_equals' | 'contains' | 'is_empty' | 'is_not_empty' | 'greater_than' | 'less_than'
 
@@ -52,6 +53,7 @@ export interface SurveyField {
   maxLength?: number
   // rating specific
   maxRating?: number
+  ratingIcon?: 'star' | 'heart' | 'thumb' | 'check' | 'dog' | 'cat'
   // matrix specific
   rows?: string[]
   columns?: string[]
@@ -70,6 +72,8 @@ export interface SurveyField {
   // image choice specific
   imageOptions?: ImageOption[]
   multiSelect?: boolean
+  // scoring specific
+  optionScores?: Record<string, number>
 }
 
 export interface ThemeSettings {
@@ -79,12 +83,22 @@ export interface ThemeSettings {
   logo?: string
   coverImage?: string
   thankYouMessage: string
+  backgroundGradient?: string
+}
+
+export interface ScoreRange {
+  min: number
+  max: number
+  label: string
+  description: string
 }
 
 export interface SurveySettings {
   displayMode: 'page' | 'step'
   password?: string
   theme: ThemeSettings
+  scoringMode?: boolean
+  scoreRanges?: ScoreRange[]
 }
 
 export interface Survey {
@@ -116,6 +130,18 @@ export interface FileRecord {
   file_size: number
 }
 
+export interface Profile {
+  id: string
+  display_name: string | null
+  avatar_url: string | null
+  plan: 'free' | 'pro' | 'enterprise' | 'admin'
+  survey_limit: number
+  response_limit: number
+  ai_credits: number
+  is_admin: boolean
+  created_at: string
+}
+
 export interface GalleryImage {
   id: string
   url: string
@@ -137,6 +163,7 @@ export const DEFAULT_SETTINGS: SurveySettings = {
 }
 
 export const FIELD_TYPE_LABELS: Record<FieldType, string> = {
+  section: '章节标题',
   text: '文本输入',
   radio: '单选题',
   checkbox: '多选题',
