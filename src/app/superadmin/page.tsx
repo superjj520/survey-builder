@@ -112,16 +112,18 @@ export default function SuperAdminPage() {
 // ===== Overview Panel =====
 function OverviewPanel() {
   const [stats, setStats] = useState<PlatformStats>({ totalUsers: 0, totalSurveys: 0, totalResponses: 0, todayResponses: 0 })
+  const [recentResponses, setRecentResponses] = useState<{ id: string; survey_title: string; submitted_at: string }[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function load() {
-      const [users, surveys, responses, todayResp] = await Promise.all([
+      const today = new Date().toISOString().split('T')[0]
+      const [users, surveys, responses, todayResp, recent] = await Promise.all([
         supabase.from('profiles').select('id', { count: 'exact', head: true }),
         supabase.from('surveys').select('id', { count: 'exact', head: true }),
         supabase.from('responses').select('id', { count: 'exact', head: true }),
-        supabase.from('responses').select('id', { count: 'exact', head: true })
-          .gte('submitted_at', new Date().toISOString().split('T')[0]),
+        supabase.from('responses').select('id', { count: 'exact', head: true }).gte('submitted_at', today),
+        supabase.from('responses').select('id, survey_id, submitted_at').order('submitted_at', { ascending: false }).limit(5),
       ])
       setStats({
         totalUsers: users.count || 0,
@@ -129,32 +131,79 @@ function OverviewPanel() {
         totalResponses: responses.count || 0,
         todayResponses: todayResp.count || 0,
       })
+      // Get titles for recent
+      if (recent.data && recent.data.length > 0) {
+        const ids = [...new Set(recent.data.map(r => r.survey_id))]
+        const { data: surveyData } = await supabase.from('surveys').select('id, title').in('id', ids)
+        const titleMap = new Map((surveyData || []).map(s => [s.id, s.title]))
+        setRecentResponses(recent.data.map(r => ({ id: r.id, survey_title: titleMap.get(r.survey_id) || '未知', submitted_at: r.submitted_at })))
+      }
       setLoading(false)
     }
     load()
   }, [])
 
   const cards = [
-    { label: '注册用户', value: stats.totalUsers, icon: '👥', color: 'from-blue-500 to-blue-600' },
-    { label: '问卷总数', value: stats.totalSurveys, icon: '📋', color: 'from-purple-500 to-purple-600' },
-    { label: '回答总数', value: stats.totalResponses, icon: '💬', color: 'from-green-500 to-green-600' },
-    { label: '今日新增回答', value: stats.todayResponses, icon: '📈', color: 'from-orange-500 to-orange-600' },
+    { label: '注册用户', value: stats.totalUsers, color: 'from-blue-500 to-blue-600', iconPath: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
+    { label: '问卷总数', value: stats.totalSurveys, color: 'from-purple-500 to-purple-600', iconPath: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+    { label: '回答总数', value: stats.totalResponses, color: 'from-green-500 to-green-600', iconPath: 'M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z' },
+    { label: '今日新增', value: stats.todayResponses, color: 'from-orange-500 to-orange-600', iconPath: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' },
   ]
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {cards.map((card) => (
-        <div key={card.label} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-2xl">{card.icon}</span>
-            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${card.color} opacity-10`} />
+    <div className="space-y-6">
+      {/* Stat cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {cards.map((card) => (
+          <div key={card.label} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-3">
+              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center`}>
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={card.iconPath} />
+                </svg>
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{loading ? '...' : card.value}</p>
+            <p className="text-sm text-gray-400 mt-1">{card.label}</p>
           </div>
-          <p className="text-3xl font-bold text-gray-900">{loading ? '-' : card.value}</p>
-          <p className="text-sm text-gray-400 mt-1">{card.label}</p>
-        </div>
-      ))}
+        ))}
+      </div>
+
+      {/* Recent activity */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+          <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          最近活动
+        </h3>
+        {recentResponses.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-4">暂无最近活动</p>
+        ) : (
+          <div className="space-y-3">
+            {recentResponses.map((r) => (
+              <div key={r.id} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
+                <div className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0" />
+                <span className="text-sm text-gray-700 flex-1">收到 <span className="font-medium">{r.survey_title}</span> 的新回答</span>
+                <span className="text-xs text-gray-400">{timeAgo(r.submitted_at)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
+}
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const minutes = Math.floor(diff / 60000)
+  if (minutes < 1) return '刚刚'
+  if (minutes < 60) return `${minutes} 分钟前`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours} 小时前`
+  const days = Math.floor(hours / 24)
+  return `${days} 天前`
 }
 
 // ===== Users Panel =====
@@ -358,73 +407,148 @@ function SurveysPanel() {
 
 // ===== Responses Panel =====
 function ResponsesPanel() {
-  const [responses, setResponses] = useState<{ id: string; survey_id: string; survey_title?: string; submitted_at: string; answers: Record<string, unknown> }[]>([])
+  const [responses, setResponses] = useState<{ id: string; survey_id: string; survey_title?: string; submitted_at: string; answers: Record<string, unknown>; metadata?: Record<string, unknown> }[]>([])
+  const [surveys, setSurveys] = useState<{ id: string; title: string; fields: { id: string; label: string; type: string }[] }[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [filterSurvey, setFilterSurvey] = useState<string>('all')
 
   useEffect(() => {
     async function load() {
-      // Load responses with survey info
-      const { data: respData } = await supabase.from('responses').select('*').order('submitted_at', { ascending: false }).limit(100)
-      if (respData && respData.length > 0) {
-        // Get survey titles
-        const surveyIds = [...new Set(respData.map(r => r.survey_id))]
-        const { data: surveyData } = await supabase.from('surveys').select('id, title').in('id', surveyIds)
-        const titleMap = new Map((surveyData || []).map(s => [s.id, s.title]))
-        setResponses(respData.map(r => ({ ...r, survey_title: titleMap.get(r.survey_id) || '未知问卷' })))
-      }
+      const [{ data: respData }, { data: surveyData }] = await Promise.all([
+        supabase.from('responses').select('*').order('submitted_at', { ascending: false }).limit(200),
+        supabase.from('surveys').select('id, title, fields'),
+      ])
+      setSurveys((surveyData || []) as typeof surveys)
+      const titleMap = new Map((surveyData || []).map(s => [s.id, s.title]))
+      setResponses((respData || []).map(r => ({ ...r, survey_title: titleMap.get(r.survey_id) || '未知问卷' })))
       setLoading(false)
     }
     load()
   }, [])
 
+  // Get field labels for a survey
+  const getFieldMap = (surveyId: string) => {
+    const survey = surveys.find(s => s.id === surveyId)
+    if (!survey) return new Map<string, string>()
+    return new Map(survey.fields.map(f => [f.id, f.label]))
+  }
+
+  const filtered = filterSurvey === 'all' ? responses : responses.filter(r => r.survey_id === filterSurvey)
+
+  // Group responses by survey for stats
+  const surveyResponseCounts = new Map<string, number>()
+  responses.forEach(r => {
+    surveyResponseCounts.set(r.survey_id, (surveyResponseCounts.get(r.survey_id) || 0) + 1)
+  })
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <span className="text-sm text-gray-400">最近 100 条回答</span>
+      {/* Stats bar */}
+      <div className="flex items-center gap-4 flex-wrap">
+        <div className="bg-white rounded-xl border border-gray-100 px-4 py-2 shadow-sm">
+          <span className="text-xs text-gray-400">总回答</span>
+          <span className="ml-2 text-lg font-bold text-gray-800">{responses.length}</span>
+        </div>
+        {/* Survey filter */}
+        <Select value={filterSurvey} onValueChange={(val) => setFilterSurvey(val || 'all')}>
+          <SelectTrigger className="h-9 w-48 text-xs bg-white">
+            <SelectValue placeholder="筛选问卷" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">全部问卷</SelectItem>
+            {surveys.filter(s => surveyResponseCounts.has(s.id)).map(s => (
+              <SelectItem key={s.id} value={s.id}>
+                {s.title} ({surveyResponseCounts.get(s.id) || 0})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <span className="text-xs text-gray-400">
+          {filterSurvey !== 'all' && `${filtered.length} 条结果`}
+        </span>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-100 bg-gray-50/50">
-              <th className="text-left p-4 font-medium text-gray-500">所属问卷</th>
-              <th className="text-left p-4 font-medium text-gray-500">提交时间</th>
-              <th className="text-left p-4 font-medium text-gray-500">答案数</th>
-              <th className="text-left p-4 font-medium text-gray-500">详情</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={4} className="p-8 text-center text-gray-400">加载中...</td></tr>
-            ) : responses.length === 0 ? (
-              <tr><td colSpan={4} className="p-8 text-center text-gray-400">暂无回答数据</td></tr>
-            ) : responses.map((resp) => (
-              <>
-                <tr key={resp.id} className="border-b border-gray-50 hover:bg-gray-50/50 cursor-pointer" onClick={() => setExpandedId(expandedId === resp.id ? null : resp.id)}>
-                  <td className="p-4 font-medium text-gray-700">{resp.survey_title}</td>
-                  <td className="p-4 text-gray-400 text-xs">{new Date(resp.submitted_at).toLocaleString()}</td>
-                  <td className="p-4 text-gray-500">{Object.keys(resp.answers || {}).length} 项</td>
-                  <td className="p-4">
-                    <svg className={`w-4 h-4 text-gray-400 transition-transform ${expandedId === resp.id ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      {/* Response cards */}
+      {loading ? (
+        <div className="text-center py-12 text-gray-400">加载中...</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-100 flex items-center justify-center">
+            <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+          </div>
+          <p className="text-gray-400">暂无回答数据</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((resp, idx) => {
+            const fieldMap = getFieldMap(resp.survey_id)
+            const isExpanded = expandedId === resp.id
+            const answerEntries = Object.entries(resp.answers || {})
+
+            return (
+              <div key={resp.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden transition-all hover:shadow-md">
+                {/* Header row */}
+                <div
+                  className="flex items-center gap-4 p-4 cursor-pointer"
+                  onClick={() => setExpandedId(isExpanded ? null : resp.id)}
+                >
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-xs font-bold text-indigo-600 flex-shrink-0">
+                    {idx + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-800 truncate">{resp.survey_title}</p>
+                    <p className="text-xs text-gray-400">{new Date(resp.submitted_at).toLocaleString()}</p>
+                  </div>
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <span className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-lg">{answerEntries.length} 题</span>
+                    <svg className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
-                  </td>
-                </tr>
-                {expandedId === resp.id && (
-                  <tr key={`${resp.id}-detail`}>
-                    <td colSpan={4} className="p-4 bg-gray-50">
-                      <div className="max-h-60 overflow-y-auto">
-                        <pre className="text-xs text-gray-600 whitespace-pre-wrap">{JSON.stringify(resp.answers, null, 2)}</pre>
+                  </div>
+                </div>
+
+                {/* Expanded detail */}
+                {isExpanded && (
+                  <div className="border-t border-gray-100 p-4 bg-gray-50/50">
+                    <div className="space-y-2">
+                      {answerEntries.map(([fieldId, value]) => {
+                        const label = fieldMap.get(fieldId) || fieldId
+                        const displayValue = formatAnswerValue(value)
+                        return (
+                          <div key={fieldId} className="flex gap-3 py-2 border-b border-gray-100 last:border-0">
+                            <span className="text-xs text-gray-500 font-medium w-32 flex-shrink-0 pt-0.5">{label}</span>
+                            <span className="text-sm text-gray-800 flex-1">{displayValue}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    {resp.metadata && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <p className="text-[10px] text-gray-300">
+                          UA: {(resp.metadata.userAgent as string || '').slice(0, 80)}...
+                        </p>
                       </div>
-                    </td>
-                  </tr>
+                    )}
+                  </div>
                 )}
-              </>
-            ))}
-          </tbody>
-        </table>
-      </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
+}
+
+function formatAnswerValue(value: unknown): string {
+  if (value === null || value === undefined) return '—'
+  if (typeof value === 'string') return value || '—'
+  if (typeof value === 'number') return String(value)
+  if (typeof value === 'boolean') return value ? '是' : '否'
+  if (Array.isArray(value)) return value.join('、') || '—'
+  if (typeof value === 'object') return JSON.stringify(value)
+  return String(value)
 }
