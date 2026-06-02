@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -17,7 +17,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useEditor } from './EditorContext'
-import { SurveyField, FieldType, FIELD_TYPE_LABELS, LogicOperator, ImageOption } from '@/lib/types'
+import { SurveyField, FieldType, FIELD_TYPE_LABELS, LogicOperator, ImageOption, PLAN_LIMITS } from '@/lib/types'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
@@ -699,10 +699,22 @@ function GuideSection({ field, update }: { field: SurveyField; update: (u: Parti
 
 // ===== Add Field Button =====
 function AddFieldButton() {
-  const { dispatch } = useEditor()
+  const { state, dispatch } = useEditor()
   const [open, setOpen] = useState(false)
+  const [plan, setPlan] = useState<string>('free')
+
+  useEffect(() => {
+    import('@/lib/auth').then(({ getProfile }) => {
+      getProfile().then(p => { if (p) setPlan(p.plan) })
+    })
+  }, [])
 
   const addField = (type: FieldType) => {
+    const limits = PLAN_LIMITS[(plan as keyof typeof PLAN_LIMITS) || 'free']
+    if (state.fields.length >= limits.fieldsPerSurvey) {
+      alert(`已达题目上限（${limits.fieldsPerSurvey} 题），请升级到 Pro 版`)
+      return
+    }
     dispatch({ type: 'ADD_FIELD', payload: createField(type) })
     setOpen(false)
   }

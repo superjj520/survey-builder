@@ -94,11 +94,75 @@ export interface ScoreRange {
 }
 
 export interface SurveySettings {
-  displayMode: 'page' | 'step'
+  displayMode: 'page' | 'step' | 'chat'
   password?: string
   theme: ThemeSettings
   scoringMode?: boolean
   scoreRanges?: ScoreRange[]
+  // Chat mode settings
+  chatRole?: string
+  chatScene?: string
+  chatOpening?: string
+  chatPersonality?: string     // 性格描述
+  chatTone?: string            // 语气风格
+  chatHabit?: string           // 口癖/说话习惯
+  chatBackground?: string      // 角色背景故事
+  chatAvatarStyle?: 'adventurer' | 'avataaars' | 'lorelei' | 'notionists' | 'personas' | 'bottts'
+  chatAvatarUrl?: string                    // 自定义头像原图 URL
+  chatAvatarMoodUrls?: Record<string, string>  // 情绪 → 表情立绘 URL 映射
+  chatInitialScene?: string      // 初始场景描述，首条消息即触发背景
+  chatBondStart?: number         // 亲密度初始值，默认20，范围0-50
+  chatBondTierNames?: string[]   // 三阶段名称，默认['初识','渐熟','知己']
+  chatBondSpeed?: 'slow' | 'normal' | 'fast'  // 亲密度增长速率
+  chatGameUnlock?: Record<string, number>      // 游戏类型 → 解锁所需最低亲密度(0-100)
+  chatMilestoneThresholds?: { name: string; threshold: number }[]  // 里程碑自动触发阈值
+  chatFeatures?: {
+    mood?: boolean      // 情绪系统
+    scene?: boolean     // 场景切换
+    suggest?: boolean   // 快捷回复
+    game?: boolean      // 小游戏
+    event?: boolean     // 剧情事件
+    choice?: boolean    // 选择卡
+    bond?: boolean      // 亲密度
+    milestone?: boolean // 里程碑
+  }
+  // Deep customization for each module
+  chatMoodList?: { name: string; emoji: string }[]          // 自定义情绪列表
+  chatGameTypes?: ('truth_or_dare' | 'guess' | 'vote' | 'word_chain' | 'quiz' | 'fortune' | 'roleplay' | 'confession')[]   // 可用游戏类型
+  chatSuggestCount?: number                                  // 快捷回复数量上限(2-6)
+  chatChoiceMax?: number                                     // 选择卡最大选项数(2-4)
+  chatMilestoneList?: string[]                               // 预设里程碑名称
+  chatEventHints?: string[]                                  // 剧情事件提示/脚本
+  chatScenePresets?: { keyword: string; gradient: string }[] // 场景关键词映射
+  chatGameConfig?: {
+    truth_or_dare?: {
+      truths: string[]
+      dares: string[]
+    }
+    quiz?: {
+      questions: { q: string; options: string[]; answer: number }[]
+    }
+    word_chain?: {
+      startWords: string[]
+      theme?: string
+    }
+    roleplay?: {
+      scenarios: string[]
+    }
+    fortune?: {
+      cards: { name: string; meaning: string }[]
+    }
+  }
+  // Sticker system
+  chatStickerPacks?: { name: string; url: string }[]  // 贴纸库：名称→图片URL
+  // TTS voice
+  chatTtsEnabled?: boolean          // 是否启用语音回复
+  chatTtsVoice?: string             // TTS 音色名
+  chatTtsMode?: 'auto' | 'custom' | 'keyword'  // auto=读原文, custom=AI生成语音, keyword=关键词触发
+  chatVoiceTriggers?: { keyword: string; reply: string }[]  // 关键词→语音内容映射
+  // Typing rhythm
+  chatTypingEnabled?: boolean       // 是否启用打字节奏
+  chatRetractEnabled?: boolean      // 是否启用撤回演出
 }
 
 export interface Survey {
@@ -134,7 +198,7 @@ export interface Profile {
   id: string
   display_name: string | null
   avatar_url: string | null
-  plan: 'free' | 'pro' | 'enterprise' | 'admin'
+  plan: 'free' | 'pro' | 'admin'
   survey_limit: number
   response_limit: number
   ai_credits: number
@@ -149,6 +213,43 @@ export interface GalleryImage {
   size: number
   created_at: string
 }
+
+// Plan limits configuration
+export const PLAN_LIMITS = {
+  free: {
+    label: '免费版',
+    surveys: 5,
+    responsesPerSurvey: 50,
+    galleryImages: 30,
+    aiCredits: 5,
+    fieldsPerSurvey: 20,
+    fileUploads: 50,
+    customTheme: false,
+    exportData: false,
+  },
+  pro: {
+    label: 'Pro',
+    surveys: 50,
+    responsesPerSurvey: Infinity,
+    galleryImages: 200,
+    aiCredits: 100,
+    fieldsPerSurvey: Infinity,
+    fileUploads: Infinity,
+    customTheme: true,
+    exportData: true,
+  },
+  admin: {
+    label: '管理员',
+    surveys: Infinity,
+    responsesPerSurvey: Infinity,
+    galleryImages: Infinity,
+    aiCredits: Infinity,
+    fieldsPerSurvey: Infinity,
+    fileUploads: Infinity,
+    customTheme: true,
+    exportData: true,
+  },
+} as const
 
 export const DEFAULT_THEME: ThemeSettings = {
   primaryColor: '#4F46E5',

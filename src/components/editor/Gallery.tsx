@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
-import { GalleryImage } from '@/lib/types'
+import { getCurrentUserId, getProfile } from '@/lib/auth'
+import { GalleryImage, PLAN_LIMITS } from '@/lib/types'
 import { nanoid } from 'nanoid'
 
 const BUCKET = 'gallery'
@@ -11,11 +12,17 @@ const BUCKET = 'gallery'
 export function useGallery() {
   const [images, setImages] = useState<GalleryImage[]>([])
   const [loading, setLoading] = useState(false)
+  const [userFolder, setUserFolder] = useState<string>('')
+
+  useEffect(() => {
+    getCurrentUserId().then(id => { if (id) setUserFolder(id) })
+  }, [])
 
   const fetchImages = useCallback(async () => {
+    if (!userFolder) return
     setLoading(true)
     try {
-      const { data, error } = await supabase.storage.from(BUCKET).list('', { limit: 200, sortBy: { column: 'created_at', order: 'desc' } })
+      const { data, error } = await supabase.storage.from(BUCKET).list(userFolder, { limit: 200, sortBy: { column: 'created_at', order: 'desc' } })
       if (error) {
         toast.error('加载图库失败: ' + error.message)
         setLoading(false)
@@ -28,7 +35,7 @@ export function useGallery() {
             id: f.id || f.name,
             name: f.name,
             size: f.metadata?.size || 0,
-            url: `https://ybyputkhtrejnqyblvdc.supabase.co/storage/v1/object/public/${BUCKET}/${f.name}`,
+            url: `https://ybyputkhtrejnqyblvdc.supabase.co/storage/v1/object/public/${BUCKET}/${userFolder}/${f.name}`,
             created_at: f.created_at || '',
           }))
         setImages(imgs)
@@ -37,12 +44,23 @@ export function useGallery() {
       toast.error('图库请求出错')
     }
     setLoading(false)
-  }, [])
+  }, [userFolder])
+
+  useEffect(() => { if (userFolder) fetchImages() }, [userFolder, fetchImages])
 
   const uploadImage = async (file: File): Promise<string | null> => {
+    if (!userFolder) { toast.error('未登录'); return null }
+    // Check image limit based on plan
+    const profile = await getProfile()
+    const limits = PLAN_LIMITS[profile?.plan || 'free']
+    if (images.length >= limits.galleryImages) {
+      toast.error(`图库已达上限（${limits.galleryImages} 张），请升级到 Pro 版`)
+      return null
+    }
     const ext = file.name.split('.').pop()?.toLowerCase() || 'png'
     const filename = `${nanoid(10)}.${ext}`
-    const { error } = await supabase.storage.from(BUCKET).upload(filename, file, {
+    const path = `${userFolder}/${filename}`
+    const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
       cacheControl: '31536000',
       upsert: false,
       contentType: file.type,
@@ -57,14 +75,15 @@ export function useGallery() {
       }
       return null
     }
-    const url = `https://ybyputkhtrejnqyblvdc.supabase.co/storage/v1/object/public/${BUCKET}/${filename}`
+    const url = `https://ybyputkhtrejnqyblvdc.supabase.co/storage/v1/object/public/${BUCKET}/${path}`
     await fetchImages()
     toast.success('上传成功')
     return url
   }
 
   const deleteImage = async (name: string) => {
-    const { error } = await supabase.storage.from(BUCKET).remove([name])
+    const path = `${userFolder}/${name}`
+    const { error } = await supabase.storage.from(BUCKET).remove([path])
     if (error) {
       toast.error('删除失败: ' + error.message)
       return
@@ -72,8 +91,6 @@ export function useGallery() {
     setImages(prev => prev.filter(img => img.name !== name))
     toast.success('已删除')
   }
-
-  useEffect(() => { fetchImages() }, [fetchImages])
 
   return { images, loading, uploadImage, deleteImage, refetch: fetchImages }
 }

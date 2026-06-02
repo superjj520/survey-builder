@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { isAuthenticated, login, register, logout, resetPassword, getSession, getProfile, getCurrentUserId } from '@/lib/auth'
-import { supabase } from '@/lib/supabase'
-import { Survey, Profile, DEFAULT_SETTINGS } from '@/lib/types'
+import { supabase, supabaseClient } from '@/lib/supabase'
+import { Survey, Profile, DEFAULT_SETTINGS, PLAN_LIMITS } from '@/lib/types'
 import { EditorLayout } from '@/components/editor/EditorLayout'
 import { ShareModal } from '@/components/editor/ShareModal'
 import { GalleryModal } from '@/components/editor/Gallery'
@@ -14,8 +14,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { nanoid } from 'nanoid'
 import { toast } from 'sonner'
+import { AIGenerateDialog } from '@/components/editor/AIGenerateDialog'
 
-type View = 'login' | 'list' | 'edit'
+type View = 'login' | 'list' | 'edit' | 'reset-password'
 
 export default function AdminPage() {
   const [view, setView] = useState<View>('login')
@@ -24,14 +25,55 @@ export default function AdminPage() {
   const [profile, setProfile] = useState<Profile | null>(null)
 
   useEffect(() => {
-    isAuthenticated().then(async (authed) => {
+    let recoveryDetected = false
+
+    // Check URL hash for recovery token (Supabase appends #access_token=...&type=recovery)
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash
+      if (hash && hash.includes('type=recovery')) {
+        recoveryDetected = true
+        // Let Supabase client process the hash, then show reset form
+        supabaseClient.client.auth.getSession().then(() => {
+          setView('reset-password')
+          setAuthChecking(false)
+        })
+      }
+    }
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabaseClient.client.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        recoveryDetected = true
+        setView('reset-password')
+        setAuthChecking(false)
+      } else if (event === 'SIGNED_IN' && session && !recoveryDetected) {
+        // Wait briefly to see if PASSWORD_RECOVERY follows
+        setTimeout(async () => {
+          if (recoveryDetected) return
+          setView('list')
+          const p = await getProfile()
+          setProfile(p)
+          setAuthChecking(false)
+        }, 500)
+      }
+    })
+
+    // Fallback: if no auth event fires within 3s, check session manually
+    const timeout = setTimeout(async () => {
+      if (recoveryDetected) return
+      const authed = await isAuthenticated()
       if (authed) {
         setView('list')
         const p = await getProfile()
         setProfile(p)
       }
       setAuthChecking(false)
-    })
+    }, 3000)
+
+    return () => {
+      subscription.unsubscribe()
+      clearTimeout(timeout)
+    }
   }, [])
 
   const navigate = (v: View, surveyId?: string) => {
@@ -50,6 +92,7 @@ export default function AdminPage() {
   }
 
   if (view === 'login') return <AuthView onSuccess={handleAuthSuccess} />
+  if (view === 'reset-password') return <ResetPasswordView onSuccess={handleAuthSuccess} />
   if (view === 'edit' && currentSurveyId) {
     return <EditView surveyId={currentSurveyId} onBack={() => navigate('list')} />
   }
@@ -192,6 +235,58 @@ function AuthView({ onSuccess }: { onSuccess: () => void }) {
   )
 }
 
+function ResetPasswordView({ onSuccess }: { onSuccess: () => void }) {
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    if (password.length < 6) {
+      setError('密码至少 6 位')
+      return
+    }
+    if (password !== confirmPassword) {
+      setError('两次密码输入不一致')
+      return
+    }
+    setLoading(true)
+    const { error: err } = await supabaseClient.client.auth.updateUser({ password })
+    if (err) {
+      setError(err.message)
+    } else {
+      toast.success('密码重置成功')
+      onSuccess()
+    }
+    setLoading(false)
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50 p-4">
+      <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 w-full max-w-sm">
+        <div className="w-14 h-14 mx-auto mb-6 rounded-xl bg-indigo-100 flex items-center justify-center">
+          <svg className="w-7 h-7 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+          </svg>
+        </div>
+        <h1 className="text-xl font-bold mb-1 text-center text-gray-800">设置新密码</h1>
+        <p className="text-sm text-gray-400 text-center mb-6">请输入您的新密码</p>
+
+        <form onSubmit={handleSubmit}>
+          <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="新密码（至少6位）" className="mb-3 h-11" required />
+          <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="确认新密码" className="mb-3 h-11" required />
+          {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
+          <Button type="submit" disabled={loading} className="w-full h-11 bg-indigo-600 hover:bg-indigo-700">
+            {loading ? '提交中...' : '确认重置'}
+          </Button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 function ListView({ onNavigate, profile }: { onNavigate: (v: View, id?: string) => void; profile: Profile | null }) {
   const [surveys, setSurveys] = useState<Survey[]>([])
   const [loading, setLoading] = useState(true)
@@ -199,6 +294,8 @@ function ListView({ onNavigate, profile }: { onNavigate: (v: View, id?: string) 
   const [showGallery, setShowGallery] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'published' | 'closed'>('all')
+  const [showAIGenerate, setShowAIGenerate] = useState(false)
+  const [responseCounts, setResponseCounts] = useState<Record<string, number>>({})
   const { confirm, dialog: confirmDialog } = useConfirm()
 
   const STATUS_MAP = {
@@ -208,15 +305,31 @@ function ListView({ onNavigate, profile }: { onNavigate: (v: View, id?: string) 
   }
 
   useEffect(() => {
-    supabase.from('surveys').select('*').order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (error) {
-          console.error('Load surveys error:', error)
-          toast.error(`加载失败: ${error.message}`)
-        }
-        setSurveys((data || []) as Survey[])
-        setLoading(false)
-      })
+    getCurrentUserId().then(userId => {
+      if (!userId) { setLoading(false); return }
+      supabase.from('surveys').select('*').eq('user_id', userId).order('created_at', { ascending: false })
+        .then(({ data, error }) => {
+          if (error) {
+            console.error('Load surveys error:', error)
+            toast.error(`加载失败: ${error.message}`)
+          }
+          const surveyList = (data || []) as Survey[]
+          setSurveys(surveyList)
+          setLoading(false)
+          // Fetch response counts
+          if (surveyList.length > 0) {
+            supabase.from('responses').select('survey_id')
+              .in('survey_id', surveyList.map(s => s.id))
+              .then(({ data: respData }) => {
+                const counts: Record<string, number> = {}
+                for (const r of (respData || [])) {
+                  counts[r.survey_id] = (counts[r.survey_id] || 0) + 1
+                }
+                setResponseCounts(counts)
+              })
+          }
+        })
+    })
   }, [])
 
   const filteredSurveys = surveys.filter(s => {
@@ -231,12 +344,44 @@ function ListView({ onNavigate, profile }: { onNavigate: (v: View, id?: string) 
       console.error('No user id when creating survey')
       return
     }
+    // Check survey limit based on plan
+    const currentProfile = await getProfile()
+    const limits = PLAN_LIMITS[currentProfile?.plan || 'free']
+    if (surveys.length >= limits.surveys) {
+      toast.error(`已达问卷上限（${limits.surveys} 份），请升级到 Pro 版`)
+      return
+    }
     const { data, error } = await supabase.from('surveys').insert({
       title: '未命名问卷', description: '', fields: [], settings: DEFAULT_SETTINGS, status: 'draft', share_id: nanoid(8),
       user_id: userId,
     }).select().single()
     if (error) {
       console.error('Create survey error:', error)
+      return
+    }
+    if (data) onNavigate('edit', data.id)
+  }
+
+  const createChatSurvey = async () => {
+    const userId = await getCurrentUserId()
+    if (!userId) return
+    const currentProfile = await getProfile()
+    const limits = PLAN_LIMITS[currentProfile?.plan || 'free']
+    if (surveys.length >= limits.surveys) {
+      toast.error(`已达问卷上限（${limits.surveys} 份），请升级到 Pro 版`)
+      return
+    }
+    const { data, error } = await supabase.from('surveys').insert({
+      title: '未命名场景对话',
+      description: '',
+      fields: [],
+      settings: { ...DEFAULT_SETTINGS, displayMode: 'chat' },
+      status: 'draft',
+      share_id: nanoid(8),
+      user_id: userId,
+    }).select().single()
+    if (error) {
+      console.error('Create chat survey error:', error)
       return
     }
     if (data) onNavigate('edit', data.id)
@@ -369,12 +514,22 @@ function ListView({ onNavigate, profile }: { onNavigate: (v: View, id?: string) 
                 className="w-full h-10 pl-9 pr-4 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-all"
               />
             </div>
+            {/* AI Generate button */}
+            <Button onClick={() => setShowAIGenerate(true)} variant="outline" className="h-10 px-4 gap-1.5 rounded-xl border-purple-200 text-purple-700 hover:bg-purple-50 transition-all active:scale-[0.97] flex-shrink-0">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+              <span className="hidden sm:inline">AI 问卷生成</span>
+            </Button>
+            {/* AI Scene Chat button */}
+            <Button onClick={createChatSurvey} variant="outline" className="h-10 px-4 gap-1.5 rounded-xl border-pink-200 text-pink-700 hover:bg-pink-50 transition-all active:scale-[0.97] flex-shrink-0">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+              <span className="hidden sm:inline">AI 场景对话</span>
+            </Button>
             {/* Create button */}
             <Button onClick={createSurvey} className="h-10 px-4 sm:px-5 bg-indigo-600 hover:bg-indigo-700 gap-1.5 sm:gap-2 rounded-xl shadow-sm transition-all active:scale-[0.97] flex-shrink-0">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
               </svg>
-              <span className="hidden sm:inline">新建问卷</span>
+              <span className="hidden sm:inline">手动新建问卷</span>
             </Button>
           </div>
 
@@ -399,6 +554,25 @@ function ListView({ onNavigate, profile }: { onNavigate: (v: View, id?: string) 
           </div>
         </div>
 
+        {/* Limit warning */}
+        {profile && profile.plan !== 'admin' && (() => {
+          const limits = PLAN_LIMITS[profile.plan || 'free']
+          const usage = surveys.length / limits.surveys
+          if (usage >= 0.8 && usage < 1) return (
+            <div className="mb-4 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2 text-sm text-amber-700">
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.27 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
+              问卷数即将达到上限（{surveys.length}/{limits.surveys}），升级 Pro 可创建更多问卷
+            </div>
+          )
+          if (usage >= 1) return (
+            <div className="mb-4 px-4 py-2.5 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 text-sm text-red-700">
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.27 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
+              已达问卷上限（{limits.surveys} 份），请升级到 Pro 版以创建更多问卷
+            </div>
+          )
+          return null
+        })()}
+
         {/* Survey grid */}
         {filteredSurveys.length === 0 ? (
           <div className="text-center py-20">
@@ -410,11 +584,17 @@ function ListView({ onNavigate, profile }: { onNavigate: (v: View, id?: string) 
             {surveys.length === 0 ? (
               <>
                 <p className="text-lg font-medium text-gray-500 mb-2">还没有问卷</p>
-                <p className="text-sm text-gray-400 mb-6">点击「新建问卷」开始</p>
-                <Button onClick={createSurvey} className="bg-indigo-600 hover:bg-indigo-700 rounded-xl h-11 px-6 gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
-                  新建问卷
-                </Button>
+                <p className="text-sm text-gray-400 mb-6">创建您的第一份问卷开始收集数据</p>
+                <div className="flex items-center gap-3 justify-center">
+                  <Button onClick={createSurvey} className="bg-indigo-600 hover:bg-indigo-700 rounded-xl h-11 px-6 gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
+                    新建问卷
+                  </Button>
+                  <Button onClick={() => setShowAIGenerate(true)} variant="outline" className="rounded-xl h-11 px-6 gap-2 border-purple-200 text-purple-700 hover:bg-purple-50">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                    AI 生成
+                  </Button>
+                </div>
               </>
             ) : (
               <>
@@ -452,15 +632,21 @@ function ListView({ onNavigate, profile }: { onNavigate: (v: View, id?: string) 
                   <div className="flex items-center gap-4 text-xs text-gray-400 mb-4">
                     <span className="flex items-center gap-1">
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      {new Date(survey.created_at).toLocaleDateString()}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                       </svg>
                       {survey.fields?.length || 0} 题
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      {responseCounts[survey.id] || 0} 回复
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      {new Date(survey.created_at).toLocaleDateString()}
                     </span>
                   </div>
 
@@ -516,6 +702,29 @@ function ListView({ onNavigate, profile }: { onNavigate: (v: View, id?: string) 
         <ShareModal open={true} onClose={() => setShareModal(null)} shareUrl={shareModal.url} title={shareModal.title} />
       )}
       <GalleryModal open={showGallery} onClose={() => setShowGallery(false)} onSelect={() => setShowGallery(false)} />
+      <AIGenerateDialog
+        open={showAIGenerate}
+        onClose={() => setShowAIGenerate(false)}
+        userId={profile?.id || ''}
+        onGenerated={async (survey) => {
+          const userId = await getCurrentUserId()
+          if (!userId) return
+          const { data } = await supabase.from('surveys').insert({
+            title: survey.title,
+            description: survey.description,
+            fields: survey.fields,
+            settings: DEFAULT_SETTINGS,
+            status: 'draft',
+            share_id: nanoid(8),
+            user_id: userId,
+          }).select().single()
+          if (data) {
+            setSurveys([data as Survey, ...surveys])
+            onNavigate('edit', data.id)
+            toast.success('问卷已生成')
+          }
+        }}
+      />
       {confirmDialog}
     </div>
   )

@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
-import { SurveyField, SurveySettings, ThemeSettings } from '@/lib/types'
+import { SurveyField, SurveySettings, ThemeSettings, PLAN_LIMITS } from '@/lib/types'
 import { getVisibleFields } from '@/lib/logic'
 import { supabase } from '@/lib/supabase'
 import { PageView } from './PageView'
 import { StepView } from './StepView'
+import { ChatView } from './ChatView'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -78,6 +79,21 @@ export function SurveyRenderer({ surveyId, fields, settings, title, description 
         setSubmitted(true)
         return
       }
+      // Check response limit for survey owner
+      const [{ count: responseCount }, { data: surveyData }] = await Promise.all([
+        supabase.from('responses').select('id', { count: 'exact', head: true }).eq('survey_id', surveyId),
+        supabase.from('surveys').select('user_id').eq('id', surveyId).single(),
+      ])
+      if (surveyData?.user_id) {
+        const { data: ownerProfile } = await supabase.from('profiles').select('plan').eq('id', surveyData.user_id).single()
+        const ownerPlan = (ownerProfile?.plan || 'free') as keyof typeof PLAN_LIMITS
+        const limit = PLAN_LIMITS[ownerPlan]?.responsesPerSurvey ?? 50
+        if (responseCount !== null && responseCount >= limit) {
+          toast.error('该问卷回答数已达上限')
+          setSubmitting(false)
+          return
+        }
+      }
       const { error } = await supabase.from('responses').insert({
         survey_id: surveyId,
         answers,
@@ -133,8 +149,8 @@ export function SurveyRenderer({ surveyId, fields, settings, title, description 
     )
   }
 
-  // Landing page
-  if (!started) {
+  // Landing page (skip for chat mode)
+  if (!started && settings.displayMode !== 'chat') {
     const questionCount = fields.filter(f => f.type !== 'section').length
     return <LandingView title={title} description={description} theme={theme} fieldCount={questionCount} onStart={() => setStarted(true)} />
   }
@@ -235,6 +251,54 @@ export function SurveyRenderer({ surveyId, fields, settings, title, description 
     title,
     description,
     theme,
+  }
+
+  if (settings.displayMode === 'chat') {
+    return (
+      <ChatView
+        fields={fields}
+        answers={answers}
+        setAnswers={setAnswers}
+        onSubmit={handleSubmit}
+        submitting={submitting}
+        title={title}
+        description={description}
+        theme={theme}
+        chatRole={settings.chatRole}
+        chatScene={settings.chatScene}
+        chatOpening={settings.chatOpening}
+        chatPersonality={settings.chatPersonality}
+        chatTone={settings.chatTone}
+        chatHabit={settings.chatHabit}
+        chatBackground={settings.chatBackground}
+        chatAvatarStyle={settings.chatAvatarStyle}
+        chatAvatarUrl={settings.chatAvatarUrl}
+        chatAvatarMoodUrls={settings.chatAvatarMoodUrls}
+        chatInitialScene={settings.chatInitialScene}
+        chatBondStart={settings.chatBondStart}
+        chatBondTierNames={settings.chatBondTierNames}
+        chatFeatures={settings.chatFeatures}
+        chatMoodList={settings.chatMoodList}
+        chatGameTypes={settings.chatGameTypes}
+        chatSuggestCount={settings.chatSuggestCount}
+        chatChoiceMax={settings.chatChoiceMax}
+        chatMilestoneList={settings.chatMilestoneList}
+        chatEventHints={settings.chatEventHints}
+        chatGameConfig={settings.chatGameConfig as Record<string, unknown>}
+        chatBondSpeed={settings.chatBondSpeed}
+        chatGameUnlock={settings.chatGameUnlock}
+        chatMilestoneThresholds={settings.chatMilestoneThresholds}
+        chatScenePresets={settings.chatScenePresets}
+        chatStickerPacks={settings.chatStickerPacks}
+        chatTtsEnabled={settings.chatTtsEnabled}
+        chatTtsVoice={settings.chatTtsVoice}
+        chatTtsMode={settings.chatTtsMode}
+        chatVoiceTriggers={settings.chatVoiceTriggers}
+        chatTypingEnabled={settings.chatTypingEnabled}
+        chatRetractEnabled={settings.chatRetractEnabled}
+        surveyId={surveyId}
+      />
+    )
   }
 
   if (settings.displayMode === 'step') {

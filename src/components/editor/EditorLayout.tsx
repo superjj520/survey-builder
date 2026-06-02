@@ -7,9 +7,10 @@ import { FieldCanvas } from './FieldCanvas'
 import { SettingsPanel } from './SettingsPanel'
 import { SurveyPreview } from './SurveyPreview'
 import { Button } from '@/components/ui/button'
-import { Survey, SurveyResponse, SurveyField, FIELD_TYPE_LABELS } from '@/lib/types'
+import { Survey, SurveyResponse, SurveyField, FIELD_TYPE_LABELS, PLAN_LIMITS } from '@/lib/types'
 import { supabase } from '@/lib/supabase'
-import { exportToCSV } from '@/lib/export'
+import { getProfile } from '@/lib/auth'
+import { exportToCSV, exportToExcel } from '@/lib/export'
 
 interface EditorLayoutProps {
   survey?: Survey
@@ -19,7 +20,9 @@ interface EditorLayoutProps {
 
 function EditorContent({ onSave, onBack, surveyId }: { onSave: EditorLayoutProps['onSave']; onBack?: () => void; surveyId?: string }) {
   const { state, dispatch } = useEditor()
-  const [activeTab, setActiveTab] = useState<'questions' | 'responses' | 'settings' | 'preview'>('questions')
+  const [activeTab, setActiveTab] = useState<'questions' | 'responses' | 'settings' | 'preview'>(
+    state.settings.displayMode === 'chat' ? 'settings' : 'questions'
+  )
   const [saving, setSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<string | null>(null)
 
@@ -184,7 +187,18 @@ function ResponsesTab({ surveyId, fields, title }: { surveyId?: string; fields: 
       .then(({ data }) => { setResponses((data || []) as SurveyResponse[]); setLoading(false) })
   }, [surveyId])
 
-  const handleExport = () => {
+  const checkExportPermission = async () => {
+    const profile = await getProfile()
+    const plan = profile?.plan || 'free'
+    if (!PLAN_LIMITS[plan].exportData) {
+      toast.error('数据导出为 Pro 功能，请升级后使用')
+      return false
+    }
+    return true
+  }
+
+  const handleExport = async () => {
+    if (!(await checkExportPermission())) return
     const csv = exportToCSV(fields, responses)
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
@@ -193,6 +207,11 @@ function ResponsesTab({ surveyId, fields, title }: { surveyId?: string; fields: 
     a.download = `${title}-responses.csv`
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  const handleExportExcel = async () => {
+    if (!(await checkExportPermission())) return
+    await exportToExcel(fields, responses, title)
   }
 
   if (loading) return <div className="flex items-center justify-center h-full text-gray-400">加载中...</div>
@@ -237,7 +256,23 @@ function ResponsesTab({ surveyId, fields, title }: { surveyId?: string; fields: 
                 逐份查看
               </button>
             </div>
-            <Button variant="outline" size="sm" onClick={handleExport}>导出 CSV</Button>
+            <div className="relative group">
+              <Button variant="outline" size="sm" className="gap-1">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                导出
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              </Button>
+              <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 w-36 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                <button onClick={handleExportExcel} className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                  <span className="w-5 h-5 rounded bg-green-100 text-green-700 flex items-center justify-center text-[10px] font-bold">X</span>
+                  Excel (.xlsx)
+                </button>
+                <button onClick={handleExport} className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                  <span className="w-5 h-5 rounded bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold">C</span>
+                  CSV
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
