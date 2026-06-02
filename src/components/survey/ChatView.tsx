@@ -185,31 +185,30 @@ export function ChatView({
 
   const avatarUrl = getAvatarForMood(currentMood)
 
-  // ─── TTS ────────────────────────────────────────────────────────────────────
+  // ─── TTS (Edge TTS via server) ──────────────────────────────────────────────
 
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) return
-    window.speechSynthesis.getVoices()
-    const handler = () => { window.speechSynthesis.getVoices() }
-    window.speechSynthesis.addEventListener('voiceschanged', handler)
-    return () => window.speechSynthesis.removeEventListener('voiceschanged', handler)
-  }, [])
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
-  const speakText = useCallback((text: string) => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) return
+  const speakText = useCallback(async (text: string) => {
+    if (typeof window === 'undefined') return
     const clean = text.replace(/\*[^*]+\*/g, '').replace(/\[[^\]]+\]/g, '').trim()
     if (!clean) return
-    const utterance = new SpeechSynthesisUtterance(clean)
-    utterance.lang = 'zh-CN'
-    utterance.rate = 1.0
-    utterance.pitch = 1.1
-    if (chatTtsVoice) {
-      const voices = window.speechSynthesis.getVoices()
-      const match = voices.find(v => v.name.includes(chatTtsVoice!))
-      if (match) utterance.voice = match
-    }
-    window.speechSynthesis.cancel()
-    window.speechSynthesis.speak(utterance)
+    // Stop previous audio
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
+    try {
+      const resp = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: clean.slice(0, 500), voice: chatTtsVoice || '晓晓' }),
+      })
+      if (!resp.ok) return
+      const blob = await resp.blob()
+      const url = URL.createObjectURL(blob)
+      const audio = new Audio(url)
+      audioRef.current = audio
+      audio.play()
+      audio.onended = () => URL.revokeObjectURL(url)
+    } catch {}
   }, [chatTtsVoice])
 
   const getKeywordVoiceReply = useCallback((msgContent: string): string | null => {

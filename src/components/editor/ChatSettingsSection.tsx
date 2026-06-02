@@ -987,12 +987,15 @@ export function ChatSettingsSection() {
                                 <Label className="text-[10px] text-gray-500">音色选择</Label>
                                 <div className="grid grid-cols-3 gap-1.5 mt-1">
                                   {[
-                                    { key: '', label: '系统默认', desc: '自动' },
-                                    { key: 'Microsoft Xiaoxiao', label: '晓晓', desc: '温柔女声' },
-                                    { key: 'Microsoft Yunxi', label: '云希', desc: '阳光男声' },
-                                    { key: 'Microsoft Xiaoyi', label: '晓伊', desc: '活泼女声' },
-                                    { key: 'Microsoft Yunyang', label: '云扬', desc: '成熟男声' },
-                                    { key: 'Microsoft Xiaomo', label: '晓墨', desc: '知性女声' },
+                                    { key: '', label: '晓晓', desc: '温柔女声' },
+                                    { key: '云希', label: '云希', desc: '阳光男声' },
+                                    { key: '晓伊', label: '晓伊', desc: '活泼女声' },
+                                    { key: '云扬', label: '云扬', desc: '成熟男声' },
+                                    { key: '晓墨', label: '晓墨', desc: '知性女声' },
+                                    { key: '晓梦', label: '晓梦', desc: '甜美女声' },
+                                    { key: '云枫', label: '云枫', desc: '沉稳男声' },
+                                    { key: '晓柔', label: '晓柔', desc: '柔和女声' },
+                                    { key: '云皓', label: '云皓', desc: '磁性男声' },
                                   ].map(v => (
                                     <button
                                       key={v.key}
