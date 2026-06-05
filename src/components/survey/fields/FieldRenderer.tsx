@@ -2,8 +2,10 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { toast } from 'sonner'
+import { Check, Image, Star, Heart, ThumbsUp, CheckCircle } from 'lucide-react'
 import { SurveyField, ThemeSettings } from '@/lib/types'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Upload, Mic, ChevronUp, ChevronDown } from 'lucide-react'
 
 interface FieldRendererProps {
   field: SurveyField
@@ -44,13 +46,16 @@ export function FieldRenderer({ field, value, onChange, theme, questionNumber }:
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100">
-      {/* Left accent bar via border */}
-      <div className="border-l-4 p-6" style={{ borderLeftColor: theme.primaryColor }}>
+    <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-100">
+      <div className="p-6">
         {/* Label + required */}
         <div className="mb-1">
-          <h3 className="text-base font-medium text-gray-800 leading-relaxed">
-            {questionNumber && <span className="text-gray-400 mr-1.5">{questionNumber}.</span>}
+          <h3 className="text-[15px] font-bold text-slate-800 leading-relaxed">
+            {questionNumber && (
+              <span className="inline-flex items-center gap-1 text-xs font-bold mr-2 px-2 py-0.5 rounded-md" style={{ backgroundColor: `${theme.primaryColor}10`, color: theme.primaryColor }}>
+                Q{questionNumber}
+              </span>
+            )}
             {field.label}
             {field.required && <span className="text-red-500 ml-1">*</span>}
           </h3>
@@ -58,7 +63,7 @@ export function FieldRenderer({ field, value, onChange, theme, questionNumber }:
 
         {/* Description */}
         {field.description && (
-          <p className="text-sm text-gray-500 mb-4">{field.description}</p>
+          <p className="text-sm text-slate-400 mb-4">{field.description}</p>
         )}
 
         {/* Guide section */}
@@ -97,7 +102,7 @@ function renderFieldInput(field: SurveyField, value: unknown, onChange: (v: unkn
             placeholder={field.placeholder || '请输入您的回答'}
             maxLength={field.maxLength}
             rows={4}
-            className="w-full border-0 border-b-2 border-gray-200 focus:border-purple-500 focus:ring-0 bg-transparent resize-none text-base py-2 px-0 placeholder-gray-300 outline-none transition-colors"
+            className="w-full border-0 border-b-2 border-gray-200 focus:border-purple-500 focus:ring-0 bg-transparent resize-none text-base py-2 px-0 placeholder-gray-300 outline-none transition-all focus:scale-[1.01] focus:translate-y-[-1px]"
           />
         )
       }
@@ -108,33 +113,36 @@ function renderFieldInput(field: SurveyField, value: unknown, onChange: (v: unkn
           onChange={(e) => onChange(e.target.value)}
           placeholder={field.placeholder || '请输入您的回答'}
           maxLength={field.maxLength}
-          className="w-full border-0 border-b-2 border-gray-200 focus:border-purple-500 focus:ring-0 bg-transparent text-base py-2 px-0 placeholder-gray-300 outline-none transition-colors"
+          className="w-full border-0 border-b-2 border-gray-200 focus:border-purple-500 focus:ring-0 bg-transparent text-base py-2 px-0 placeholder-gray-300 outline-none transition-all focus:scale-[1.01] focus:translate-y-[-1px]"
         />
       )
 
     case 'radio':
       return (
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {(field.options || []).map((opt) => (
-            <label
+            <div
               key={opt}
-              className={`flex items-center gap-3 p-3.5 rounded-lg border-2 cursor-pointer transition-all ${
+              onClick={() => onChange(opt)}
+              className={`flex items-center gap-3.5 p-4 rounded-2xl border-[1.5px] cursor-pointer transition-all duration-200 active:scale-[0.97] ${
                 value === opt
-                  ? 'border-purple-200 bg-purple-50'
-                  : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'
+                  ? 'border-purple-300 bg-gradient-to-r from-purple-50 to-indigo-50 shadow-sm'
+                  : 'border-slate-100 bg-slate-50/50 hover:border-slate-200 hover:bg-white hover:-translate-y-[1px] hover:shadow-sm'
               }`}
+              style={value === opt ? { boxShadow: `0 4px 12px ${theme.primaryColor}15` } : undefined}
             >
               <span
-                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                  value === opt ? 'border-purple-500' : 'border-gray-300'
+                className={`w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                  value === opt ? 'border-transparent' : 'border-slate-300'
                 }`}
+                style={value === opt ? { backgroundColor: theme.primaryColor } : undefined}
               >
                 {value === opt && (
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: theme.primaryColor }} />
+                  <Check className="w-3 h-3 text-white animate-scaleIn" strokeWidth={3} />
                 )}
               </span>
-              <span className="text-sm text-gray-700">{opt}</span>
-            </label>
+              <span className={`text-[15px] transition-colors ${value === opt ? 'text-slate-800 font-semibold' : 'text-slate-600 font-medium'}`}>{opt}</span>
+            </div>
           ))}
         </div>
       )
@@ -142,31 +150,38 @@ function renderFieldInput(field: SurveyField, value: unknown, onChange: (v: unkn
     case 'checkbox':
       const checkedValues = (value as string[]) || []
       return (
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {(field.options || []).map((opt) => {
             const isChecked = checkedValues.includes(opt)
             return (
-              <label
+              <div
                 key={opt}
-                className={`flex items-center gap-3 p-3.5 rounded-lg border-2 cursor-pointer transition-all ${
+                onClick={() => {
+                  if (isChecked) {
+                    onChange(checkedValues.filter(v => v !== opt))
+                  } else {
+                    onChange([...checkedValues, opt])
+                  }
+                }}
+                className={`flex items-center gap-3.5 p-4 rounded-2xl border-[1.5px] cursor-pointer transition-all duration-200 active:scale-[0.97] ${
                   isChecked
-                    ? 'border-purple-200 bg-purple-50'
-                    : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'
+                    ? 'border-purple-300 bg-gradient-to-r from-purple-50 to-indigo-50 shadow-sm'
+                    : 'border-slate-100 bg-slate-50/50 hover:border-slate-200 hover:bg-white hover:-translate-y-[1px] hover:shadow-sm'
                 }`}
+                style={isChecked ? { boxShadow: `0 4px 12px ${theme.primaryColor}15` } : undefined}
               >
                 <span
-                  className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 border-2 transition-all ${
-                    isChecked ? 'border-purple-500 bg-purple-500' : 'border-gray-300'
+                  className={`w-[22px] h-[22px] rounded-md flex items-center justify-center flex-shrink-0 border-2 transition-all ${
+                    isChecked ? 'border-transparent' : 'border-slate-300'
                   }`}
+                  style={isChecked ? { backgroundColor: theme.primaryColor } : undefined}
                 >
                   {isChecked && (
-                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                    </svg>
+                    <Check className="w-3 h-3 text-white animate-scaleIn" strokeWidth={3} />
                   )}
                 </span>
-                <span className="text-sm text-gray-700">{opt}</span>
-              </label>
+                <span className={`text-[15px] transition-colors ${isChecked ? 'text-slate-800 font-semibold' : 'text-slate-600 font-medium'}`}>{opt}</span>
+              </div>
             )
           })}
         </div>
@@ -188,21 +203,36 @@ function renderFieldInput(field: SurveyField, value: unknown, onChange: (v: unkn
 
     case 'rating':
       const maxRating = field.maxRating || 5
-      const currentRating = (value as number) || 0
+      const currentRating = typeof value === 'number' && value > 0 ? value : 0
       const iconType = field.ratingIcon || 'star'
       return (
-        <div className="flex gap-1.5 sm:gap-2 py-2 flex-wrap">
+        <div className="flex gap-1.5 sm:gap-2 py-2 flex-wrap group">
           {Array.from({ length: maxRating }, (_, i) => i + 1).map((star) => (
             <button
               key={star}
-              onClick={() => onChange(star === currentRating ? 0 : star)}
-              className="w-8 h-8 sm:w-10 sm:h-10 transition-all hover:scale-125 active:scale-90"
+              onClick={() => onChange(star)}
+              className="w-8 h-8 sm:w-10 sm:h-10 transition-all hover:scale-125 active:scale-90 peer"
+              data-star={star}
+              onMouseEnter={(e) => {
+                const parent = e.currentTarget.parentElement
+                if (!parent) return
+                parent.querySelectorAll('button').forEach(btn => {
+                  const s = Number(btn.getAttribute('data-star'))
+                  if (s <= star) btn.style.opacity = '1'
+                  else btn.style.opacity = '0.4'
+                })
+              }}
+              onMouseLeave={(e) => {
+                const parent = e.currentTarget.parentElement
+                if (!parent) return
+                parent.querySelectorAll('button').forEach(btn => { btn.style.opacity = '1' })
+              }}
             >
               <RatingIcon type={iconType} filled={star <= currentRating} color={theme.primaryColor} />
             </button>
           ))}
           {currentRating > 0 && (
-            <span className="self-center text-sm text-gray-400 ml-2">{currentRating}/{maxRating}</span>
+            <span className="self-center text-sm text-gray-400 ml-2 animate-fadeIn">{currentRating}/{maxRating}</span>
           )}
         </div>
       )
@@ -232,9 +262,7 @@ function renderFieldInput(field: SurveyField, value: unknown, onChange: (v: unkn
           />
           <label htmlFor={`file-${field.id}`} className="cursor-pointer">
             <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gray-100 flex items-center justify-center">
-              <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
+              <Upload className="w-6 h-6 text-gray-400" />
             </div>
             <p className="text-sm text-gray-500 font-medium">点击上传文件</p>
             {field.acceptedTypes && (
@@ -302,7 +330,7 @@ function renderFieldInput(field: SurveyField, value: unknown, onChange: (v: unkn
                     onChange(newItems)
                   }}
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7"/></svg>
+                  <ChevronUp className="w-3.5 h-3.5" />
                 </button>
                 <button
                   className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30"
@@ -313,7 +341,7 @@ function renderFieldInput(field: SurveyField, value: unknown, onChange: (v: unkn
                     onChange(newItems)
                   }}
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
+                  <ChevronDown className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
@@ -358,7 +386,8 @@ function renderFieldInput(field: SurveyField, value: unknown, onChange: (v: unkn
       const sliderMin = field.sliderMin ?? 0
       const sliderMax = field.sliderMax ?? 100
       const sliderStep = field.sliderStep ?? 1
-      const sliderVal = (value as number) ?? sliderMin
+      const sliderHasValue = value !== undefined && value !== null
+      const sliderVal = sliderHasValue ? (value as number) : Math.round((sliderMin + sliderMax) / 2)
       return (
         <div className="space-y-3">
           <input
@@ -368,12 +397,14 @@ function renderFieldInput(field: SurveyField, value: unknown, onChange: (v: unkn
             step={sliderStep}
             value={sliderVal}
             onChange={(e) => onChange(parseInt(e.target.value))}
-            className="w-full h-2 rounded-full appearance-none cursor-pointer"
+            className={`w-full h-2 rounded-full appearance-none cursor-pointer ${!sliderHasValue ? 'opacity-40' : ''}`}
             style={{ accentColor: theme.primaryColor }}
           />
           <div className="flex justify-between text-xs text-gray-400">
             <span>{sliderMin}</span>
-            <span className="text-base font-medium text-gray-700">{sliderVal}</span>
+            <span className={`text-base font-medium ${sliderHasValue ? 'text-gray-700' : 'text-gray-300'}`}>
+              {sliderHasValue ? sliderVal : '拖动选择'}
+            </span>
             <span>{sliderMax}</span>
           </div>
         </div>
@@ -427,7 +458,7 @@ function renderFieldInput(field: SurveyField, value: unknown, onChange: (v: unkn
                   <img src={opt.imageUrl} alt={opt.label} className="w-full h-28 object-cover" />
                 ) : (
                   <div className="w-full h-28 bg-gray-100 flex items-center justify-center text-gray-300">
-                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    <Image className="w-8 h-8" strokeWidth={1.5} />
                   </div>
                 )}
                 <div className="p-2 flex items-center gap-2">
@@ -642,10 +673,7 @@ function VoiceField({ field, value, onChange, theme }: { field: SurveyField; val
                 className="w-16 h-16 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-md"
                 style={{ backgroundColor: theme.primaryColor }}
               >
-                <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-                  <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-                </svg>
+                <Mic className="w-7 h-7 text-white" />
               </button>
               <p className="text-sm text-gray-400">点击开始录音</p>
             </>
@@ -655,9 +683,7 @@ function VoiceField({ field, value, onChange, theme }: { field: SurveyField; val
         <div className="space-y-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: theme.primaryColor + '20' }}>
-              <svg className="w-5 h-5" fill={theme.primaryColor} viewBox="0 0 24 24">
-                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-              </svg>
+              <Mic className="w-5 h-5" style={{ color: theme.primaryColor }} />
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-700">录音完成</p>
@@ -721,46 +747,34 @@ function EmailInput({ value, onChange, placeholder }: { value: string; onChange:
   )
 }
 
-// Rating icon component - filled/outlined SVG pairs
+// Rating icon component using Lucide icons where possible
 function RatingIcon({ type, filled, color }: { type: string; filled: boolean; color: string }) {
-  const fillColor = filled ? color : 'none'
-  const strokeColor = filled ? color : '#d1d5db'
+  const iconProps = {
+    className: 'w-full h-full',
+    strokeWidth: 1.5,
+    fill: filled ? color : 'none',
+    color: filled ? color : '#d1d5db',
+  }
 
   switch (type) {
     case 'star':
-      return (
-        <svg viewBox="0 0 24 24" fill={fillColor} stroke={strokeColor} strokeWidth={1.5} className="w-full h-full">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
-        </svg>
-      )
+      return <Star {...iconProps} />
     case 'heart':
-      return (
-        <svg viewBox="0 0 24 24" fill={fillColor} stroke={strokeColor} strokeWidth={1.5} className="w-full h-full">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
-        </svg>
-      )
+      return <Heart {...iconProps} />
     case 'thumb':
-      return (
-        <svg viewBox="0 0 24 24" fill={fillColor} stroke={strokeColor} strokeWidth={1.5} className="w-full h-full">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6.633 10.5c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75A2.25 2.25 0 0116.5 4.5c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H14.23c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 00-1.423-.23H5.904M14.25 9h2.25M5.904 18.75c.083.228.22.442.396.632a2.25 2.25 0 001.6.668h.004c.803 0 1.484-.586 1.677-1.378l.063-.258c.152-.618.006-1.272-.394-1.752a2.062 2.062 0 00-.703-.552M5.904 18.75H4.5a2.25 2.25 0 01-2.25-2.25v-6.75a2.25 2.25 0 012.25-2.25h1.404" />
-        </svg>
-      )
+      return <ThumbsUp {...iconProps} />
     case 'check':
-      return (
-        <svg viewBox="0 0 24 24" fill={fillColor} stroke={strokeColor} strokeWidth={1.5} className="w-full h-full">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      )
+      return <CheckCircle {...iconProps} />
     case 'dog':
       return filled ? (
         <svg viewBox="0 0 1024 1024" fill={color} className="w-full h-full">
           <path d="M827.2 356.8c-3.2-22.4-9.6-44.8-19.2-64-9.6-25.6-22.4-48-38.4-67.2-6.4-6.4-12.8-16-22.4-22.4l-3.2-3.2c-6.4 19.2-16 35.2-28.8 51.2-16 16-35.2 28.8-57.6 35.2-22.4 6.4-44.8 6.4-67.2 0-22.4-6.4-41.6-19.2-57.6-35.2-16-16-28.8-35.2-35.2-57.6-6.4-22.4-6.4-44.8 0-67.2 6.4-22.4 19.2-41.6 35.2-57.6 9.6-9.6 22.4-19.2 35.2-25.6-32-6.4-64-6.4-96 0-28.8 6.4-57.6 16-83.2 32-25.6 16-48 35.2-67.2 57.6-12.8 16-22.4 32-32 51.2-6.4 12.8-9.6 25.6-16 38.4-3.2 12.8-6.4 25.6-9.6 38.4-3.2 19.2-3.2 38.4-3.2 57.6 0 16 0 32 3.2 48 6.4 44.8 22.4 89.6 44.8 128 16 28.8 35.2 54.4 57.6 76.8 3.2 3.2 3.2 6.4 3.2 9.6v201.6c0 9.6 3.2 16 9.6 22.4 6.4 6.4 16 9.6 22.4 9.6h54.4c9.6 0 16-3.2 22.4-9.6 6.4-6.4 9.6-16 9.6-22.4v-48h86.4v48c0 9.6 3.2 16 9.6 22.4 6.4 6.4 16 9.6 22.4 9.6h54.4c9.6 0 16-3.2 22.4-9.6 6.4-6.4 9.6-16 9.6-22.4V560c0-3.2 0-6.4 3.2-9.6 22.4-22.4 41.6-48 57.6-76.8 16-28.8 25.6-57.6 32-89.6 0-9.6 0-19.2 0-28.8z M444.8 480c-19.2 0-35.2-16-35.2-35.2s16-35.2 35.2-35.2 35.2 16 35.2 35.2-16 35.2-35.2 35.2z M636.8 480c-19.2 0-35.2-16-35.2-35.2s16-35.2 35.2-35.2 35.2 16 35.2 35.2-16 35.2-35.2 35.2z"/>
         </svg>
       ) : (
-        <svg viewBox="0 0 1024 1024" fill="none" stroke={strokeColor} strokeWidth={48} className="w-full h-full">
+        <svg viewBox="0 0 1024 1024" fill="none" stroke="#d1d5db" strokeWidth={48} className="w-full h-full">
           <path d="M827.2 356.8c-3.2-22.4-9.6-44.8-19.2-64-9.6-25.6-22.4-48-38.4-67.2-6.4-6.4-12.8-16-22.4-22.4l-3.2-3.2c-6.4 19.2-16 35.2-28.8 51.2-16 16-35.2 28.8-57.6 35.2-22.4 6.4-44.8 6.4-67.2 0-22.4-6.4-41.6-19.2-57.6-35.2-16-16-28.8-35.2-35.2-57.6-6.4-22.4-6.4-44.8 0-67.2 6.4-22.4 19.2-41.6 35.2-57.6 9.6-9.6 22.4-19.2 35.2-25.6-32-6.4-64-6.4-96 0-28.8 6.4-57.6 16-83.2 32-25.6 16-48 35.2-67.2 57.6-12.8 16-22.4 32-32 51.2-6.4 12.8-9.6 25.6-16 38.4-3.2 12.8-6.4 25.6-9.6 38.4-3.2 19.2-3.2 38.4-3.2 57.6 0 16 0 32 3.2 48 6.4 44.8 22.4 89.6 44.8 128 16 28.8 35.2 54.4 57.6 76.8 3.2 3.2 3.2 6.4 3.2 9.6v201.6c0 9.6 3.2 16 9.6 22.4 6.4 6.4 16 9.6 22.4 9.6h54.4c9.6 0 16-3.2 22.4-9.6 6.4-6.4 9.6-16 9.6-22.4v-48h86.4v48c0 9.6 3.2 16 9.6 22.4 6.4 6.4 16 9.6 22.4 9.6h54.4c9.6 0 16-3.2 22.4-9.6 6.4-6.4 9.6-16 9.6-22.4V560c0-3.2 0-6.4 3.2-9.6 22.4-22.4 41.6-48 57.6-76.8 16-28.8 25.6-57.6 32-89.6 0-9.6 0-19.2 0-28.8z"/>
-          <circle cx="444.8" cy="444.8" r="35.2" fill={strokeColor}/>
-          <circle cx="636.8" cy="444.8" r="35.2" fill={strokeColor}/>
+          <circle cx="444.8" cy="444.8" r="35.2" fill="#d1d5db"/>
+          <circle cx="636.8" cy="444.8" r="35.2" fill="#d1d5db"/>
         </svg>
       )
     case 'cat':
@@ -769,19 +783,15 @@ function RatingIcon({ type, filled, color }: { type: string; filled: boolean; co
           <path d="M816 192l-48 272c0 141.6-114.4 256-256 256S256 605.6 256 464L208 192l144 80c48-32 102.4-48 160-48s112 16 160 48l144-80zM416 480c0 19.2 12.8 32 32 32s32-12.8 32-32-12.8-32-32-32-32 12.8-32 32z m192 0c0 19.2-12.8 32-32 32s-32-12.8-32-32 12.8-32 32-32 32 12.8 32 32z m-64 64c0 0-16 32-32 32s-32-32-32-32h64z M512 784c64 0 121.6-25.6 163.2-67.2l38.4 38.4C665.6 803.2 592 832 512 832s-153.6-28.8-201.6-76.8l38.4-38.4C390.4 758.4 448 784 512 784z"/>
         </svg>
       ) : (
-        <svg viewBox="0 0 1024 1024" fill="none" stroke={strokeColor} strokeWidth={48} className="w-full h-full">
+        <svg viewBox="0 0 1024 1024" fill="none" stroke="#d1d5db" strokeWidth={48} className="w-full h-full">
           <path strokeLinecap="round" strokeLinejoin="round" d="M816 192l-48 272c0 141.6-114.4 256-256 256S256 605.6 256 464L208 192l144 80c48-32 102.4-48 160-48s112 16 160 48l144-80z"/>
-          <circle cx="432" cy="480" r="32" fill={strokeColor}/>
-          <circle cx="592" cy="480" r="32" fill={strokeColor}/>
+          <circle cx="432" cy="480" r="32" fill="#d1d5db"/>
+          <circle cx="592" cy="480" r="32" fill="#d1d5db"/>
           <path strokeLinecap="round" d="M480 544s16 32 32 32 32-32 32-32"/>
           <path strokeLinecap="round" d="M512 784c64 0 121.6-25.6 163.2-67.2M512 784c-64 0-121.6-25.6-163.2-67.2"/>
         </svg>
       )
     default:
-      return (
-        <svg viewBox="0 0 24 24" fill={fillColor} stroke={strokeColor} strokeWidth={1.5} className="w-full h-full">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
-        </svg>
-      )
+      return <Star {...iconProps} />
   }
 }

@@ -273,15 +273,36 @@ function ConditionalLogicConfig({ field }: { field: SurveyField }) {
             </SelectContent>
           </Select>
 
-          {!['is_empty', 'is_not_empty'].includes(field.logic.show_if.operator) && (
-            <Input
-              value={(field.logic.show_if.value as string) || ''}
-              onChange={(e) =>
-                update({ logic: { show_if: { ...field.logic!.show_if, value: e.target.value } } })
-              }
-              placeholder="值"
-            />
-          )}
+          {!['is_empty', 'is_not_empty'].includes(field.logic.show_if.operator) && (() => {
+            const sourceField = state.fields.find(f => f.id === field.logic!.show_if.field)
+            const sourceOptions = sourceField?.options
+            if (sourceOptions && sourceOptions.length > 0) {
+              return (
+                <Select
+                  value={(field.logic.show_if.value as string) || ''}
+                  onValueChange={(val) =>
+                    update({ logic: { show_if: { ...field.logic!.show_if, value: val || '' } } })
+                  }
+                >
+                  <SelectTrigger><SelectValue placeholder="选择值" /></SelectTrigger>
+                  <SelectContent>
+                    {sourceOptions.map((opt) => (
+                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )
+            }
+            return (
+              <Input
+                value={(field.logic.show_if.value as string) || ''}
+                onChange={(e) =>
+                  update({ logic: { show_if: { ...field.logic!.show_if, value: e.target.value } } })
+                }
+                placeholder="值"
+              />
+            )
+          })()}
         </div>
       )}
     </div>

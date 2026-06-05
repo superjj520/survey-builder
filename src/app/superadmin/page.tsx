@@ -3,10 +3,12 @@
 import { useState, useEffect } from 'react'
 import { isAuthenticated, getProfile, getSession, logout } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
-import { Profile, Survey } from '@/lib/types'
+import { Profile, Survey, Template, TemplateCategory, TEMPLATE_CATEGORIES, TEMPLATE_CATEGORY_COLORS } from '@/lib/types'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { toast } from 'sonner'
+import { ShieldCheck, LogOut, BarChart3, Users, FileText, ChevronDown, ChevronLeft, ChevronRight, Search, Clock } from 'lucide-react'
 
 interface UserWithStats extends Profile {
   email?: string
@@ -21,7 +23,7 @@ interface PlatformStats {
   todayResponses: number
 }
 
-type Tab = 'overview' | 'users'
+type Tab = 'overview' | 'users' | 'templates'
 
 export default function SuperAdminPage() {
   const [authorized, setAuthorized] = useState(false)
@@ -51,9 +53,7 @@ export default function SuperAdminPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-orange-600 flex items-center justify-center shadow-sm">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
+              <ShieldCheck className="w-5 h-5 text-white" />
             </div>
             <h1 className="text-lg font-bold text-gray-800">超级管理后台</h1>
           </div>
@@ -65,9 +65,7 @@ export default function SuperAdminPage() {
               onClick={async () => { await logout(); window.location.href = '/admin/' }}
               className="text-xs text-gray-400 hover:text-gray-600 p-2 rounded-lg hover:bg-gray-100"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -77,9 +75,10 @@ export default function SuperAdminPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4">
         <div className="flex gap-1 bg-white border border-gray-200 rounded-xl p-1 w-fit">
           {([
-            ['overview', '数据总览', 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z'],
-            ['users', '用户管理', 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z'],
-          ] as const).map(([key, label, icon]) => (
+            ['overview', '数据总览', BarChart3],
+            ['users', '用户管理', Users],
+            ['templates', '模板管理', FileText],
+          ] as const).map(([key, label, Icon]) => (
             <button
               key={key}
               onClick={() => setActiveTab(key as Tab)}
@@ -87,9 +86,7 @@ export default function SuperAdminPage() {
                 activeTab === key ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
-              </svg>
+              <Icon className="w-4 h-4" />
               {label}
             </button>
           ))}
@@ -100,6 +97,7 @@ export default function SuperAdminPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {activeTab === 'overview' && <OverviewPanel />}
         {activeTab === 'users' && <UsersPanel />}
+        {activeTab === 'templates' && <TemplatesPanel />}
       </div>
     </div>
   )
@@ -139,10 +137,10 @@ function OverviewPanel() {
   }, [])
 
   const cards = [
-    { label: '注册用户', value: stats.totalUsers, color: 'from-blue-500 to-blue-600', iconPath: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
-    { label: '问卷总数', value: stats.totalSurveys, color: 'from-purple-500 to-purple-600', iconPath: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
-    { label: '回答总数', value: stats.totalResponses, color: 'from-green-500 to-green-600', iconPath: 'M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z' },
-    { label: '今日新增', value: stats.todayResponses, color: 'from-orange-500 to-orange-600', iconPath: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' },
+    { label: '注册用户', value: stats.totalUsers, color: 'from-blue-500 to-blue-600', Icon: Users },
+    { label: '问卷总数', value: stats.totalSurveys, color: 'from-purple-500 to-purple-600', Icon: FileText },
+    { label: '回答总数', value: stats.totalResponses, color: 'from-green-500 to-green-600', Icon: BarChart3 },
+    { label: '今日新增', value: stats.todayResponses, color: 'from-orange-500 to-orange-600', Icon: Clock },
   ]
 
   return (
@@ -152,9 +150,7 @@ function OverviewPanel() {
           <div key={card.label} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-3">
               <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center`}>
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={card.iconPath} />
-                </svg>
+                <card.Icon className="w-5 h-5 text-white" />
               </div>
             </div>
             <p className="text-3xl font-bold text-gray-900">{loading ? '...' : card.value}</p>
@@ -165,9 +161,7 @@ function OverviewPanel() {
 
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
-          <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+          <Clock className="w-4 h-4 text-green-500" />
           最近活动
         </h3>
         {recentResponses.length === 0 ? (
@@ -268,9 +262,7 @@ function UsersPanel() {
     <div className="space-y-4">
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-sm">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
           <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索用户..." className="pl-9" />
         </div>
         <span className="text-sm text-gray-400">共 {users.length} 个用户</span>
@@ -325,9 +317,7 @@ function UsersPanel() {
                 <td className="p-4">
                   <button className="text-xs text-indigo-500 hover:text-indigo-700 flex items-center gap-1">
                     查看详情
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
+                    <ChevronRight className="w-3 h-3" />
                   </button>
                 </td>
               </tr>
@@ -440,9 +430,7 @@ function UserDetailPanel({
           onClick={onBack}
           className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 px-3 py-1.5 rounded-lg hover:bg-white border border-transparent hover:border-gray-200 transition-all"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+          <ChevronLeft className="w-4 h-4" />
           返回用户列表
         </button>
       </div>
@@ -547,9 +535,7 @@ function UserDetailPanel({
       {/* Surveys list */}
       <div>
         <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-          <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
+          <FileText className="w-4 h-4 text-purple-500" />
           该用户的问卷 ({surveys.length})
         </h3>
 
@@ -596,9 +582,7 @@ function UserDetailPanel({
                       >
                         预览
                       </a>
-                      <svg className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
+                      <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                     </div>
                   </div>
 
@@ -659,9 +643,7 @@ function ResponseCard({
           <span className="text-xs text-gray-500">{new Date(response.submitted_at).toLocaleString()}</span>
         </div>
         <span className="text-[10px] text-gray-400">{answerEntries.length} 题</span>
-        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`} />
       </div>
 
       {expanded && (
@@ -696,4 +678,259 @@ function formatAnswerValue(value: unknown): string {
   if (Array.isArray(value)) return value.join('、') || '—'
   if (typeof value === 'object') return JSON.stringify(value)
   return String(value)
+}
+
+// ===== Templates Panel =====
+function TemplatesPanel() {
+  const [templates, setTemplates] = useState<Template[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [surveys, setSurveys] = useState<{ id: string; title: string; fields: unknown; settings: unknown }[]>([])
+  const [form, setForm] = useState({
+    title: '', description: '', category: 'personality' as TemplateCategory,
+    tags: '', cover_image: '', is_featured: false,
+    source_survey: '', fields: '[]', settings: '{}',
+  })
+
+  useEffect(() => {
+    loadTemplates()
+    loadSurveys()
+  }, [])
+
+  async function loadTemplates() {
+    const { data } = await supabase.from('templates').select('*').order('created_at', { ascending: false })
+    setTemplates((data || []) as Template[])
+    setLoading(false)
+  }
+
+  async function loadSurveys() {
+    const { data } = await supabase.from('surveys').select('id, title, fields, settings').order('created_at', { ascending: false }).limit(50)
+    setSurveys((data || []) as typeof surveys)
+  }
+
+  const resetForm = () => {
+    setForm({ title: '', description: '', category: 'personality', tags: '', cover_image: '', is_featured: false, source_survey: '', fields: '[]', settings: '{}' })
+    setEditingId(null)
+    setShowForm(false)
+  }
+
+  const handleSourceChange = (surveyId: string | null) => {
+    if (!surveyId) return
+    setForm(prev => ({ ...prev, source_survey: surveyId }))
+    const survey = surveys.find(s => s.id === surveyId)
+    if (survey) {
+      setForm(prev => ({
+        ...prev,
+        fields: JSON.stringify(survey.fields),
+        settings: JSON.stringify(survey.settings),
+      }))
+    }
+  }
+
+  const handleSave = async () => {
+    if (!form.title.trim()) { toast.error('请填写标题'); return }
+    if (!form.description.trim()) { toast.error('请填写描述'); return }
+
+    let fields, settings
+    try {
+      fields = JSON.parse(form.fields)
+      settings = JSON.parse(form.settings)
+    } catch {
+      toast.error('JSON 格式错误')
+      return
+    }
+
+    const payload = {
+      title: form.title.trim(),
+      description: form.description.trim(),
+      category: form.category,
+      tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
+      cover_image: form.cover_image.trim() || null,
+      is_featured: form.is_featured,
+      fields,
+      settings,
+    }
+
+    if (editingId) {
+      const { error } = await supabase.from('templates').update(payload).eq('id', editingId)
+      if (error) { toast.error('更新失败: ' + error.message); return }
+      toast.success('模板已更新')
+    } else {
+      const { error } = await supabase.from('templates').insert(payload)
+      if (error) { toast.error('创建失败: ' + error.message); return }
+      toast.success('模板已创建')
+    }
+    resetForm()
+    loadTemplates()
+  }
+
+  const handleEdit = (tpl: Template) => {
+    setForm({
+      title: tpl.title,
+      description: tpl.description,
+      category: tpl.category,
+      tags: tpl.tags.join(', '),
+      cover_image: tpl.cover_image || '',
+      is_featured: tpl.is_featured,
+      source_survey: '',
+      fields: JSON.stringify(tpl.fields, null, 2),
+      settings: JSON.stringify(tpl.settings, null, 2),
+    })
+    setEditingId(tpl.id)
+    setShowForm(true)
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('确定删除此模板？')) return
+    await supabase.from('templates').delete().eq('id', id)
+    toast.success('已删除')
+    loadTemplates()
+  }
+
+  const toggleFeatured = async (id: string, current: boolean) => {
+    await supabase.from('templates').update({ is_featured: !current }).eq('id', id)
+    setTemplates(prev => prev.map(t => t.id === id ? { ...t, is_featured: !current } : t))
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-gray-700">模板管理 ({templates.length})</h3>
+        <Button
+          onClick={() => { resetForm(); setShowForm(true) }}
+          className="h-8 text-xs bg-indigo-600 hover:bg-indigo-700"
+        >
+          + 添加模板
+        </Button>
+      </div>
+
+      {/* Form Dialog */}
+      {showForm && (
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-lg p-6 space-y-4">
+          <h4 className="font-semibold text-gray-800">{editingId ? '编辑模板' : '添加模板'}</h4>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">标题 *</label>
+              <Input value={form.title} onChange={e => setForm(prev => ({ ...prev, title: e.target.value }))} placeholder="模板标题" className="h-9 text-sm" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">分类 *</label>
+              <Select value={form.category} onValueChange={v => setForm(prev => ({ ...prev, category: v as TemplateCategory }))}>
+                <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(TEMPLATE_CATEGORIES).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs text-gray-500 mb-1 block">描述 *</label>
+            <textarea
+              value={form.description}
+              onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))}
+              placeholder="一句话描述模板用途"
+              className="w-full h-16 px-3 py-2 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">标签（逗号分隔）</label>
+              <Input value={form.tags} onChange={e => setForm(prev => ({ ...prev, tags: e.target.value }))} placeholder="MBTI, 性格, 小红书" className="h-9 text-sm" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">封面图 URL</label>
+              <Input value={form.cover_image} onChange={e => setForm(prev => ({ ...prev, cover_image: e.target.value }))} placeholder="https://..." className="h-9 text-sm" />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs text-gray-500 mb-1 block">从现有问卷导入</label>
+            <Select value={form.source_survey} onValueChange={handleSourceChange}>
+              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="选择问卷..." /></SelectTrigger>
+              <SelectContent>
+                {surveys.map(s => (
+                  <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={form.is_featured}
+              onChange={e => setForm(prev => ({ ...prev, is_featured: e.target.checked }))}
+              className="rounded border-gray-300"
+            />
+            <label className="text-xs text-gray-600">精选模板（在模板库顶部展示）</label>
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <Button onClick={handleSave} className="h-8 text-xs bg-indigo-600 hover:bg-indigo-700">
+              {editingId ? '保存修改' : '创建模板'}
+            </Button>
+            <Button onClick={resetForm} variant="outline" className="h-8 text-xs">取消</Button>
+          </div>
+        </div>
+      )}
+
+      {/* Table */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-gray-100 bg-gray-50/50">
+              <th className="text-left p-4 font-medium text-gray-500">模板</th>
+              <th className="text-left p-4 font-medium text-gray-500">分类</th>
+              <th className="text-left p-4 font-medium text-gray-500">使用次数</th>
+              <th className="text-left p-4 font-medium text-gray-500">精选</th>
+              <th className="text-left p-4 font-medium text-gray-500">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr><td colSpan={5} className="p-8 text-center text-gray-400">加载中...</td></tr>
+            ) : templates.length === 0 ? (
+              <tr><td colSpan={5} className="p-8 text-center text-gray-400">暂无模板，点击上方按钮添加</td></tr>
+            ) : templates.map(tpl => (
+              <tr key={tpl.id} className="border-b border-gray-50 hover:bg-gray-50/50">
+                <td className="p-4">
+                  <p className="font-medium text-gray-800">{tpl.title}</p>
+                  <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{tpl.description}</p>
+                </td>
+                <td className="p-4">
+                  <span
+                    className="text-[10px] px-2 py-0.5 rounded-full text-white font-medium"
+                    style={{ backgroundColor: TEMPLATE_CATEGORY_COLORS[tpl.category] }}
+                  >
+                    {TEMPLATE_CATEGORIES[tpl.category]}
+                  </span>
+                </td>
+                <td className="p-4 text-gray-600">{tpl.use_count}</td>
+                <td className="p-4">
+                  <button
+                    onClick={() => toggleFeatured(tpl.id, tpl.is_featured)}
+                    className={`text-lg ${tpl.is_featured ? 'text-amber-400' : 'text-gray-300 hover:text-amber-300'}`}
+                  >
+                    ★
+                  </button>
+                </td>
+                <td className="p-4">
+                  <div className="flex gap-2">
+                    <button onClick={() => handleEdit(tpl)} className="text-xs text-indigo-500 hover:text-indigo-700">编辑</button>
+                    <button onClick={() => handleDelete(tpl.id)} className="text-xs text-red-400 hover:text-red-600">删除</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
 }

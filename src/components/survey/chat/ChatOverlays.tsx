@@ -1,6 +1,7 @@
 'use client'
 
 import { ThemeSettings } from '@/lib/types'
+import { MapPin, BookOpen, Sparkles, Zap } from 'lucide-react'
 
 interface ChatOverlaysProps {
   // Scene
@@ -60,7 +61,7 @@ export function ChatOverlays({
       {showSceneBar && (
         <div className="absolute bottom-20 left-0 right-0 z-30 flex justify-center pointer-events-none">
           <div className="animate-sceneBar bg-black/40 backdrop-blur-sm text-white text-xs px-4 py-2 rounded-full">
-            📍 {sceneBarText}
+            <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {sceneBarText}</span>
           </div>
         </div>
       )}
@@ -69,7 +70,7 @@ export function ChatOverlays({
       {activeEvent && (
         <div className="absolute inset-0 z-50 bg-black/60 flex items-center justify-center p-6" onClick={onDismissEvent}>
           <div className="animate-eventCardIn max-w-sm w-full bg-white/95 backdrop-blur-md rounded-2xl p-6 text-center shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="text-2xl mb-3">📖</div>
+            <div className="mb-3 flex justify-center"><BookOpen className="w-6 h-6 text-indigo-500" /></div>
             <p className="text-gray-800 text-sm leading-relaxed mb-4">{activeEvent}</p>
             <button
               onClick={onDismissEvent}
@@ -100,7 +101,7 @@ export function ChatOverlays({
         <div className="absolute inset-0 z-50 bg-black/60 flex items-center justify-center p-6 animate-fadeIn">
           <div className="max-w-sm w-full bg-white rounded-2xl p-6 shadow-2xl animate-bounceIn">
             <div className="text-center mb-4">
-              <div className="text-3xl mb-2">✨</div>
+              <div className="flex justify-center mb-2"><Sparkles className="w-7 h-7 text-amber-500" /></div>
               <h3 className="text-lg font-bold text-gray-800">对话回顾</h3>
             </div>
             <div className="flex items-center justify-between bg-gray-50 rounded-xl p-3 mb-3">
@@ -137,7 +138,7 @@ export function ChatOverlays({
                 <p className="text-xs text-indigo-600 font-medium mb-2">你的选择</p>
                 <div className="space-y-1">
                   {choiceHistory.map((c, i) => (
-                    <p key={i} className="text-xs text-indigo-700">⚡ {c.text}</p>
+                    <p key={i} className="text-xs text-indigo-700 flex items-center gap-1"><Zap className="w-3 h-3" /> {c.text}</p>
                   ))}
                 </div>
               </div>

@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ImagePicker } from './Gallery'
 import { ThemeSettings } from '@/lib/types'
 import { ChatSettingsSection } from './ChatSettingsSection'
+import { LayoutList, ChevronsRight, Lock, Palette, BarChart3, CheckCircle, AlignLeft, X } from 'lucide-react'
 
 export function SettingsPanel() {
   const { state, dispatch } = useEditor()
@@ -25,11 +26,13 @@ export function SettingsPanel() {
 
   const THEME_PRESETS: { name: string; theme: Partial<ThemeSettings> }[] = [
     { name: '靛蓝', theme: { primaryColor: '#4F46E5', backgroundGradient: 'linear-gradient(135deg, #f0ebf8 0%, #e8e0f0 100%)' } },
+    { name: '小红书粉', theme: { primaryColor: '#FF2442', backgroundGradient: 'linear-gradient(135deg, #fff5f7 0%, #ffe4e9 100%)' } },
     { name: '翠绿', theme: { primaryColor: '#059669', backgroundGradient: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)' } },
     { name: '活力橙', theme: { primaryColor: '#EA580C', backgroundGradient: 'linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%)' } },
     { name: '玫红', theme: { primaryColor: '#BE185D', backgroundGradient: 'linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%)' } },
     { name: '海蓝', theme: { primaryColor: '#0891B2', backgroundGradient: 'linear-gradient(135deg, #ecfeff 0%, #cffafe 100%)' } },
-    { name: '暗黑', theme: { primaryColor: '#6366f1', backgroundGradient: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)' } },
+    { name: '奶茶棕', theme: { primaryColor: '#92400E', backgroundGradient: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)' } },
+    { name: '暗黑', theme: { primaryColor: '#818cf8', backgroundGradient: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)' } },
   ]
 
   return (
@@ -39,9 +42,7 @@ export function SettingsPanel() {
         {settings.displayMode !== 'chat' && (
         <section className="bg-white rounded-xl p-6 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
+            <LayoutList className="w-4 h-4 text-indigo-500" />
             显示模式
           </h3>
           <div className="grid grid-cols-2 gap-3">
@@ -54,9 +55,7 @@ export function SettingsPanel() {
               }`}
             >
               <div className="w-10 h-10 mx-auto mb-2 rounded-lg bg-gray-100 flex items-center justify-center">
-                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+                <LayoutList className="w-5 h-5 text-gray-500" />
               </div>
               <p className="text-sm font-medium text-gray-700">一页多题</p>
               <p className="text-xs text-gray-400 mt-0.5">所有题目在一页</p>
@@ -70,9 +69,7 @@ export function SettingsPanel() {
               }`}
             >
               <div className="w-10 h-10 mx-auto mb-2 rounded-lg bg-gray-100 flex items-center justify-center">
-                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                </svg>
+                <ChevronsRight className="w-5 h-5 text-gray-500" />
               </div>
               <p className="text-sm font-medium text-gray-700">一页一题</p>
               <p className="text-xs text-gray-400 mt-0.5">逐题展示</p>
@@ -87,9 +84,7 @@ export function SettingsPanel() {
         {/* Password */}
         <section className="bg-white rounded-xl p-6 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
+            <Lock className="w-4 h-4 text-indigo-500" />
             访问控制
           </h3>
           <div className="space-y-3">
@@ -110,14 +105,53 @@ export function SettingsPanel() {
               />
             )}
           </div>
+
+          {/* Deadline */}
+          <div className="space-y-3 pt-4 border-t border-gray-100">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm text-gray-600">截止时间</Label>
+              <Switch
+                checked={!!settings.deadline}
+                onCheckedChange={(checked) => updateSettings({ deadline: checked ? new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 16) : undefined })}
+              />
+            </div>
+            {settings.deadline && (
+              <Input
+                type="datetime-local"
+                value={settings.deadline.slice(0, 16)}
+                onChange={(e) => updateSettings({ deadline: e.target.value ? new Date(e.target.value).toISOString() : undefined })}
+                className="text-sm"
+              />
+            )}
+            <p className="text-[11px] text-gray-400">超过截止时间后，问卷将自动停止收集</p>
+          </div>
+
+          {/* Max responses */}
+          <div className="space-y-3 pt-4 border-t border-gray-100">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm text-gray-600">回复数上限</Label>
+              <Switch
+                checked={!!settings.maxResponses}
+                onCheckedChange={(checked) => updateSettings({ maxResponses: checked ? 100 : undefined })}
+              />
+            </div>
+            {settings.maxResponses && (
+              <Input
+                type="number"
+                min={1}
+                value={settings.maxResponses}
+                onChange={(e) => updateSettings({ maxResponses: parseInt(e.target.value) || 100 })}
+                className="text-sm w-28"
+              />
+            )}
+            <p className="text-[11px] text-gray-400">达到上限后自动停止收集新回复</p>
+          </div>
         </section>
 
         {/* Theme */}
         <section className="bg-white rounded-xl p-6 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-            </svg>
+            <Palette className="w-4 h-4 text-indigo-500" />
             主题样式
           </h3>
           <div className="space-y-4">
@@ -246,9 +280,7 @@ export function SettingsPanel() {
         {/* Scoring mode */}
         <section className="bg-white rounded-xl p-6 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
+            <BarChart3 className="w-4 h-4 text-indigo-500" />
             计分模式
           </h3>
           <div className="space-y-4">
@@ -322,7 +354,7 @@ export function SettingsPanel() {
                         updateSettings({ scoreRanges: ranges })
                       }}
                       className="text-gray-300 hover:text-red-400 text-xs"
-                    >✕</button>
+                    ><X className="w-3 h-3" /></button>
                   </div>
                 ))}
                 <button
@@ -337,12 +369,48 @@ export function SettingsPanel() {
           </div>
         </section>
 
+        {/* Custom ending page */}
+        <section className="bg-white rounded-xl p-6 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 text-indigo-500" />
+            结束页设置
+          </h3>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm text-gray-600">按钮文字</Label>
+              <Input
+                value={settings.endingButtonText || ''}
+                onChange={(e) => updateSettings({ endingButtonText: e.target.value || undefined })}
+                placeholder="如：关注我的小红书"
+              />
+              <p className="text-[11px] text-gray-400">提交后显示的操作按钮文字，留空则不显示</p>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm text-gray-600">按钮跳转链接</Label>
+              <Input
+                value={settings.endingRedirectUrl || ''}
+                onChange={(e) => updateSettings({ endingRedirectUrl: e.target.value || undefined })}
+                placeholder="https://..."
+              />
+              <p className="text-[11px] text-gray-400">点击按钮后跳转的地址</p>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm text-gray-600">关注引导文案</Label>
+              <Textarea
+                value={settings.endingFollowGuide || ''}
+                onChange={(e) => updateSettings({ endingFollowGuide: e.target.value || undefined })}
+                placeholder="如：觉得好玩？关注我获取更多有趣测试~"
+                rows={2}
+              />
+              <p className="text-[11px] text-gray-400">提交成功页底部的引导文字</p>
+            </div>
+          </div>
+        </section>
+
         {/* Description */}
         <section className="bg-white rounded-xl p-6 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h8m-8 6h16" />
-            </svg>
+            <AlignLeft className="w-4 h-4 text-indigo-500" />
             问卷描述
           </h3>
           <Textarea

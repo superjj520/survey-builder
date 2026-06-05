@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { isAuthenticated, login, register, logout, resetPassword, getSession, getProfile, getCurrentUserId } from '@/lib/auth'
 import { supabase, supabaseClient } from '@/lib/supabase'
 import { Survey, Profile, DEFAULT_SETTINGS, PLAN_LIMITS } from '@/lib/types'
+import { BUILTIN_TEMPLATES } from '@/lib/templates'
 import { EditorLayout } from '@/components/editor/EditorLayout'
 import { ShareModal } from '@/components/editor/ShareModal'
 import { GalleryModal } from '@/components/editor/Gallery'
@@ -15,6 +16,7 @@ import { Input } from '@/components/ui/input'
 import { nanoid } from 'nanoid'
 import { toast } from 'sonner'
 import { AIGenerateDialog } from '@/components/editor/AIGenerateDialog'
+import { LogOut, Search, Zap, MessageCircle, Plus, ArrowUpDown, AlertTriangle, FileText, ClipboardList, Users, Trash2, Link, Copy, LayoutTemplate, Pencil, Send, Archive, RotateCcw, Image, Brain, Heart, Sparkles, Rocket } from 'lucide-react'
 
 type View = 'login' | 'list' | 'edit' | 'reset-password'
 
@@ -82,13 +84,64 @@ export default function AdminPage() {
   }
 
   const handleAuthSuccess = async () => {
-    setView('list')
     const p = await getProfile()
     setProfile(p)
+
+    // Check for template param
+    const params = new URLSearchParams(window.location.search)
+
+    // Direct edit param (from template page redirect)
+    const editId = params.get('edit')
+    if (editId) {
+      window.history.replaceState({}, '', '/admin/')
+      setCurrentSurveyId(editId)
+      setView('edit')
+      return
+    }
+
+    const templateId = params.get('template')
+    if (templateId) {
+      window.history.replaceState({}, '', '/admin/')
+      const tpl = BUILTIN_TEMPLATES.find(t => t.id === templateId)
+      if (tpl) {
+        const userId = await getCurrentUserId()
+        const { data: newSurvey } = await supabase.from('surveys').insert({
+          user_id: userId,
+          title: `${tpl.title} (副本)`,
+          description: tpl.description || '',
+          fields: tpl.fields,
+          settings: tpl.settings,
+          status: 'draft',
+          share_id: nanoid(8),
+        }).select().single()
+        if (newSurvey) {
+          toast.success('模板已应用')
+          setCurrentSurveyId(newSurvey.id)
+          setView('edit')
+          return
+        }
+      }
+    }
+
+    setView('list')
+
+    // Welcome toast for first-time users
+    if (!localStorage.getItem('onboarding_done')) {
+      toast.success('欢迎来到趣测小屋！从模板开始，3分钟发布你的第一个测试 ✨')
+    }
   }
 
   if (authChecking) {
-    return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="text-gray-400">加载中...</div></div>
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center animate-pulse">
+            <FileText className="w-5 h-5 text-indigo-400" />
+          </div>
+          <p className="text-sm text-gray-400">加载中...</p>
+        </div>
+      </div>
+    )
   }
 
   if (view === 'login') return <AuthView onSuccess={handleAuthSuccess} />
@@ -164,14 +217,19 @@ function AuthView({ onSuccess }: { onSuccess: () => void }) {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50 p-4">
-      <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 w-full max-w-sm">
-        <div className="w-14 h-14 mx-auto mb-6 rounded-xl bg-indigo-100 flex items-center justify-center">
-          <svg className="w-7 h-7 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
+      <div className="w-full max-w-sm">
+        {/* Brand header */}
+        <div className="text-center mb-6">
+          <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-200">
+            <FileText className="w-6 h-6 text-white" />
+          </div>
+          <h2 className="text-lg font-bold text-gray-800">趣测小屋</h2>
+          <p className="text-xs text-gray-400 mt-0.5">3分钟创建爆款测试，让内容自发传播</p>
         </div>
+
+        <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
         <h1 className="text-xl font-bold mb-1 text-center text-gray-800">
-          {mode === 'login' ? '问卷管理后台' : mode === 'register' ? '创建账号' : '重置密码'}
+          {mode === 'login' ? '登录' : mode === 'register' ? '创建账号' : '重置密码'}
         </h1>
         <p className="text-sm text-gray-400 text-center mb-6">
           {mode === 'login' ? '登录后管理您的问卷' : mode === 'register' ? '注册一个新账号开始使用' : '输入邮箱接收重置链接'}
@@ -231,6 +289,14 @@ function AuthView({ onSuccess }: { onSuccess: () => void }) {
           </form>
         )}
       </div>
+
+        {/* Feature highlights */}
+        <div className="mt-5 flex items-center justify-center gap-4 text-[11px] text-gray-400">
+          <span className="flex items-center gap-1"><MessageCircle className="w-3 h-3" /> AI对话</span>
+          <span className="flex items-center gap-1"><ClipboardList className="w-3 h-3" /> 自动计分</span>
+          <span className="flex items-center gap-1"><Send className="w-3 h-3" /> 移动适配</span>
+        </div>
+      </div>
     </div>
   )
 }
@@ -267,9 +333,7 @@ function ResetPasswordView({ onSuccess }: { onSuccess: () => void }) {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50 p-4">
       <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 w-full max-w-sm">
         <div className="w-14 h-14 mx-auto mb-6 rounded-xl bg-indigo-100 flex items-center justify-center">
-          <svg className="w-7 h-7 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-          </svg>
+          <FileText className="w-7 h-7 text-indigo-600" />
         </div>
         <h1 className="text-xl font-bold mb-1 text-center text-gray-800">设置新密码</h1>
         <p className="text-sm text-gray-400 text-center mb-6">请输入您的新密码</p>
@@ -294,14 +358,16 @@ function ListView({ onNavigate, profile }: { onNavigate: (v: View, id?: string) 
   const [showGallery, setShowGallery] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'published' | 'closed'>('all')
+  const [sortBy, setSortBy] = useState<'newest' | 'responses'>('newest')
   const [showAIGenerate, setShowAIGenerate] = useState(false)
   const [responseCounts, setResponseCounts] = useState<Record<string, number>>({})
+  const [showOnboarding, setShowOnboarding] = useState(false)
   const { confirm, dialog: confirmDialog } = useConfirm()
 
   const STATUS_MAP = {
     draft: { label: '草稿', color: 'bg-amber-50 text-amber-700', dot: 'bg-amber-400' },
     published: { label: '收集中', color: 'bg-green-50 text-green-700', dot: 'bg-green-400' },
-    closed: { label: '已关闭', color: 'bg-gray-100 text-gray-500', dot: 'bg-gray-400' },
+    closed: { label: '已归档', color: 'bg-gray-100 text-gray-500', dot: 'bg-gray-400' },
   }
 
   useEffect(() => {
@@ -316,6 +382,10 @@ function ListView({ onNavigate, profile }: { onNavigate: (v: View, id?: string) 
           const surveyList = (data || []) as Survey[]
           setSurveys(surveyList)
           setLoading(false)
+          // Show onboarding for new users
+          if (surveyList.length === 0 && !localStorage.getItem('onboarding_done')) {
+            setShowOnboarding(true)
+          }
           // Fetch response counts
           if (surveyList.length > 0) {
             supabase.from('responses').select('survey_id')
@@ -333,9 +403,13 @@ function ListView({ onNavigate, profile }: { onNavigate: (v: View, id?: string) 
   }, [])
 
   const filteredSurveys = surveys.filter(s => {
+    if (statusFilter === 'all' && s.status === 'closed') return false
     if (statusFilter !== 'all' && s.status !== statusFilter) return false
     if (searchQuery && !s.title.toLowerCase().includes(searchQuery.toLowerCase())) return false
     return true
+  }).sort((a, b) => {
+    if (sortBy === 'responses') return (responseCounts[b.id] || 0) - (responseCounts[a.id] || 0)
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   })
 
   const createSurvey = async () => {
@@ -395,9 +469,29 @@ function ListView({ onNavigate, profile }: { onNavigate: (v: View, id?: string) 
   }
 
   const toggleStatus = async (survey: Survey) => {
-    const newStatus = survey.status === 'published' ? 'closed' : 'published'
+    const newStatus = survey.status === 'published' ? 'closed' : survey.status === 'closed' ? 'draft' : 'published'
     await supabase.from('surveys').update({ status: newStatus }).eq('id', survey.id)
     setSurveys(surveys.map((s) => s.id === survey.id ? { ...s, status: newStatus as Survey['status'] } : s))
+  }
+
+  const publishSurvey = async (survey: Survey) => {
+    await supabase.from('surveys').update({ status: 'published' }).eq('id', survey.id)
+    setSurveys(surveys.map((s) => s.id === survey.id ? { ...s, status: 'published' as Survey['status'] } : s))
+    toast.success('问卷已发布')
+  }
+
+  const archiveSurvey = async (survey: Survey) => {
+    const ok = await confirm({ title: '确定要归档此问卷吗？', description: '归档后将停止收集回复，可随时恢复为草稿。' })
+    if (!ok) return
+    await supabase.from('surveys').update({ status: 'closed' }).eq('id', survey.id)
+    setSurveys(surveys.map((s) => s.id === survey.id ? { ...s, status: 'closed' as Survey['status'] } : s))
+    toast.success('问卷已归档')
+  }
+
+  const unpublishSurvey = async (survey: Survey) => {
+    await supabase.from('surveys').update({ status: 'draft' }).eq('id', survey.id)
+    setSurveys(surveys.map((s) => s.id === survey.id ? { ...s, status: 'draft' as Survey['status'] } : s))
+    toast.success('问卷已设为草稿')
   }
 
   const duplicateSurvey = async (survey: Survey) => {
@@ -451,25 +545,19 @@ function ListView({ onNavigate, profile }: { onNavigate: (v: View, id?: string) 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm">
-              <svg className="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+              <FileText className="w-4.5 h-4.5 text-white" strokeWidth={2} />
             </div>
             <h1 className="text-lg font-bold text-gray-800">问卷管理</h1>
           </div>
           <div className="flex items-center gap-3">
             {profile?.is_admin && (
               <a href="/superadmin/" className="h-9 px-3 rounded-lg text-xs text-orange-600 bg-orange-50 hover:bg-orange-100 flex items-center gap-1.5 transition-colors font-medium">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
+                <AlertTriangle className="w-3.5 h-3.5" />
                 超管
               </a>
             )}
             <Button variant="outline" onClick={() => setShowGallery(true)} className="h-9 gap-1.5 rounded-lg text-xs">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
+              <Image className="w-3.5 h-3.5" />
               图库
             </Button>
             {/* User panel */}
@@ -489,9 +577,7 @@ function ListView({ onNavigate, profile }: { onNavigate: (v: View, id?: string) 
                 className="text-xs text-gray-400 hover:text-gray-600 p-2 rounded-lg hover:bg-gray-100 transition-colors"
                 title="退出登录"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
+                <LogOut className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -499,14 +585,36 @@ function ListView({ onNavigate, profile }: { onNavigate: (v: View, id?: string) 
       </header>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+        {/* Stats dashboard */}
+        {surveys.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+            <div className="bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm">
+              <p className="text-lg sm:text-xl font-bold text-indigo-600">{surveys.length}</p>
+              <p className="text-[11px] text-gray-400">问卷总数</p>
+            </div>
+            <div className="bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm">
+              <p className="text-lg sm:text-xl font-bold text-green-600">{Object.values(responseCounts).reduce((a, b) => a + b, 0)}</p>
+              <p className="text-[11px] text-gray-400">总回复数</p>
+            </div>
+            <div className="bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm">
+              <p className="text-lg sm:text-xl font-bold text-amber-600">{surveys.filter(s => s.status === 'published').length}</p>
+              <p className="text-[11px] text-gray-400">收集中</p>
+            </div>
+            <div className="bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm">
+              <p className="text-lg sm:text-xl font-bold text-purple-600">
+                {surveys.length > 0 ? Math.round(Object.values(responseCounts).reduce((a, b) => a + b, 0) / surveys.length) : 0}
+              </p>
+              <p className="text-[11px] text-gray-400">平均回复/卷</p>
+            </div>
+          </div>
+        )}
+
         {/* Toolbar: search + filter + create */}
         <div className="flex flex-col gap-3 mb-6">
           <div className="flex items-center gap-3">
             {/* Search */}
             <div className="relative flex-1">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
               <input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -516,41 +624,54 @@ function ListView({ onNavigate, profile }: { onNavigate: (v: View, id?: string) 
             </div>
             {/* AI Generate button */}
             <Button onClick={() => setShowAIGenerate(true)} variant="outline" className="h-10 px-4 gap-1.5 rounded-xl border-purple-200 text-purple-700 hover:bg-purple-50 transition-all active:scale-[0.97] flex-shrink-0">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+              <Zap className="w-4 h-4" />
               <span className="hidden sm:inline">AI 问卷生成</span>
             </Button>
             {/* AI Scene Chat button */}
             <Button onClick={createChatSurvey} variant="outline" className="h-10 px-4 gap-1.5 rounded-xl border-pink-200 text-pink-700 hover:bg-pink-50 transition-all active:scale-[0.97] flex-shrink-0">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+              <MessageCircle className="w-4 h-4" />
               <span className="hidden sm:inline">AI 场景对话</span>
             </Button>
+            {/* Templates button */}
+            <a href="/templates" className="inline-flex items-center h-10 px-4 gap-1.5 rounded-xl border border-amber-200 text-amber-700 hover:bg-amber-50 transition-all active:scale-[0.97] flex-shrink-0 text-sm font-medium">
+              <LayoutTemplate className="w-4 h-4" />
+              <span className="hidden sm:inline">模板库</span>
+            </a>
             {/* Create button */}
             <Button onClick={createSurvey} className="h-10 px-4 sm:px-5 bg-indigo-600 hover:bg-indigo-700 gap-1.5 sm:gap-2 rounded-xl shadow-sm transition-all active:scale-[0.97] flex-shrink-0">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-              </svg>
+              <Plus className="w-4 h-4" strokeWidth={2.5} />
               <span className="hidden sm:inline">手动新建问卷</span>
             </Button>
           </div>
 
-          {/* Status filter */}
-          <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1 overflow-x-auto scrollbar-hide">
-            {([['all', '全部'], ['draft', '草稿'], ['published', '收集中'], ['closed', '已关闭']] as const).map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => setStatusFilter(key)}
-                className={`px-3 py-1.5 text-xs rounded-lg transition-all flex-shrink-0 ${
-                  statusFilter === key ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {label}
-                {key !== 'all' && (
-                  <span className="ml-1 text-[10px] opacity-60">
-                    {surveys.filter(s => s.status === key).length}
-                  </span>
-                )}
-              </button>
-            ))}
+          {/* Status filter + Sort */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1 overflow-x-auto scrollbar-hide flex-1">
+              {([['all', '全部'], ['draft', '草稿'], ['published', '收集中'], ['closed', '已归档']] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => setStatusFilter(key)}
+                  className={`px-3 py-1.5 text-xs rounded-lg transition-all flex-shrink-0 ${
+                    statusFilter === key ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {label}
+                  {key !== 'all' && (
+                    <span className="ml-1 text-[10px] opacity-60">
+                      {surveys.filter(s => s.status === key).length}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setSortBy(sortBy === 'newest' ? 'responses' : 'newest')}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg bg-white border border-gray-200 text-gray-500 hover:text-gray-700 transition-all flex-shrink-0"
+              title="切换排序"
+            >
+              <ArrowUpDown className="w-3.5 h-3.5" />
+              {sortBy === 'newest' ? '最新' : '回答数'}
+            </button>
           </div>
         </div>
 
@@ -560,13 +681,13 @@ function ListView({ onNavigate, profile }: { onNavigate: (v: View, id?: string) 
           const usage = surveys.length / limits.surveys
           if (usage >= 0.8 && usage < 1) return (
             <div className="mb-4 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2 text-sm text-amber-700">
-              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.27 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
               问卷数即将达到上限（{surveys.length}/{limits.surveys}），升级 Pro 可创建更多问卷
             </div>
           )
           if (usage >= 1) return (
             <div className="mb-4 px-4 py-2.5 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 text-sm text-red-700">
-              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.27 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
               已达问卷上限（{limits.surveys} 份），请升级到 Pro 版以创建更多问卷
             </div>
           )
@@ -577,23 +698,45 @@ function ListView({ onNavigate, profile }: { onNavigate: (v: View, id?: string) 
         {filteredSurveys.length === 0 ? (
           <div className="text-center py-20">
             <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gray-100 flex items-center justify-center">
-              <svg className="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+              <FileText className="w-10 h-10 text-gray-300" strokeWidth={1.5} />
             </div>
             {surveys.length === 0 ? (
               <>
                 <p className="text-lg font-medium text-gray-500 mb-2">还没有问卷</p>
-                <p className="text-sm text-gray-400 mb-6">创建您的第一份问卷开始收集数据</p>
-                <div className="flex items-center gap-3 justify-center">
+                <p className="text-sm text-gray-400 mb-6">从模板快速开始，或创建空白问卷</p>
+                <div className="flex items-center gap-3 justify-center flex-wrap mb-8">
                   <Button onClick={createSurvey} className="bg-indigo-600 hover:bg-indigo-700 rounded-xl h-11 px-6 gap-2">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
+                    <Plus className="w-4 h-4" strokeWidth={2.5} />
                     新建问卷
                   </Button>
                   <Button onClick={() => setShowAIGenerate(true)} variant="outline" className="rounded-xl h-11 px-6 gap-2 border-purple-200 text-purple-700 hover:bg-purple-50">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                    <Zap className="w-4 h-4" />
                     AI 生成
                   </Button>
+                </div>
+                {/* Recommended templates */}
+                <div className="max-w-2xl mx-auto">
+                  <p className="text-xs font-medium text-gray-400 mb-3 flex items-center gap-1"><Zap className="w-3 h-3" /> 热门模板，一键开始</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+                    {BUILTIN_TEMPLATES.filter(t => t.is_featured).slice(0, 4).map(tpl => (
+                      <a
+                        key={tpl.id}
+                        href={`/templates`}
+                        className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-white hover:border-indigo-200 hover:shadow-sm transition-all group"
+                      >
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                          <span className="text-indigo-400">{tpl.category === 'personality' ? <Brain className="w-5 h-5" /> : tpl.category === 'social' ? <Heart className="w-5 h-5" /> : <Zap className="w-5 h-5" />}</span>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-700 truncate">{tpl.title}</p>
+                          <p className="text-[11px] text-gray-400 truncate">{tpl.fields.length}题 · {tpl.use_count}人用过</p>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                  <a href="/templates" className="inline-flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-700 mt-3 transition-colors">
+                    查看全部模板 →
+                  </a>
                 </div>
               </>
             ) : (
@@ -608,73 +751,116 @@ function ListView({ onNavigate, profile }: { onNavigate: (v: View, id?: string) 
             {filteredSurveys.map((survey) => (
               <div
                 key={survey.id}
-                className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200 transition-all overflow-hidden cursor-pointer group"
+                className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all overflow-hidden cursor-pointer group"
                 onClick={() => onNavigate('edit', survey.id)}
               >
-                {/* Accent top bar */}
-                <div className="h-1.5 w-full" style={{ backgroundColor: survey.settings?.theme?.primaryColor || '#4F46E5' }} />
+                {/* Accent top bar - color mapped to status */}
+                <div className="h-[3px] w-full" style={{
+                  background: survey.status === 'published'
+                    ? 'linear-gradient(90deg, #22c55e, #16a34a)'
+                    : survey.status === 'closed'
+                      ? 'linear-gradient(90deg, #94a3b8, #64748b)'
+                      : 'linear-gradient(90deg, #f59e0b, #eab308)'
+                }} />
 
                 <div className="p-5">
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-semibold text-gray-800 truncate flex-1 group-hover:text-indigo-600 transition-colors">
-                      {survey.title}
-                    </h3>
-                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ml-2 flex-shrink-0 flex items-center gap-1 ${STATUS_MAP[survey.status].color}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${STATUS_MAP[survey.status].dot}`} />
-                      {STATUS_MAP[survey.status].label}
-                    </span>
+                    <div className="flex-1 min-w-0">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-md font-semibold inline-flex items-center gap-1 mb-2 ${
+                        survey.status === 'published' ? 'bg-green-50 text-green-600' :
+                        survey.status === 'closed' ? 'bg-slate-100 text-slate-500' :
+                        'bg-amber-50 text-amber-600'
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${STATUS_MAP[survey.status].dot}`} />
+                        {STATUS_MAP[survey.status].label}
+                      </span>
+                      <h3 className="font-bold text-slate-800 truncate group-hover:text-indigo-600 transition-colors text-[15px]">
+                        {survey.title}
+                      </h3>
+                    </div>
+                    {/* Quick status action */}
+                    <div className="flex gap-1 ml-2" onClick={(e) => e.stopPropagation()}>
+                      {survey.status === 'draft' && (
+                        <button
+                          onClick={() => publishSurvey(survey)}
+                          className="h-6 px-2 rounded-md bg-green-50 text-green-600 text-[10px] font-medium flex items-center gap-1 hover:bg-green-100 transition-colors"
+                          title="发布"
+                        >
+                          <Send className="w-3 h-3" />
+                          发布
+                        </button>
+                      )}
+                      {survey.status === 'published' && (
+                        <button
+                          onClick={() => archiveSurvey(survey)}
+                          className="h-6 px-2 rounded-md bg-slate-50 text-slate-500 text-[10px] font-medium flex items-center gap-1 hover:bg-slate-100 transition-colors"
+                          title="归档"
+                        >
+                          <Archive className="w-3 h-3" />
+                          归档
+                        </button>
+                      )}
+                      {survey.status === 'closed' && (
+                        <button
+                          onClick={() => unpublishSurvey(survey)}
+                          className="h-6 px-2 rounded-md bg-amber-50 text-amber-600 text-[10px] font-medium flex items-center gap-1 hover:bg-amber-100 transition-colors"
+                          title="恢复为草稿"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                          恢复
+                        </button>
+                      )}
+                    </div>
                   </div>
 
-                  {survey.description && (
-                    <p className="text-sm text-gray-400 mb-3 line-clamp-2">{survey.description}</p>
-                  )}
-
-                  <div className="flex items-center gap-4 text-xs text-gray-400 mb-4">
-                    <span className="flex items-center gap-1">
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                      </svg>
-                      {survey.fields?.length || 0} 题
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      {responseCounts[survey.id] || 0} 回复
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      {new Date(survey.created_at).toLocaleDateString()}
-                    </span>
+                  {/* Stats row */}
+                  <div className="flex items-center gap-3 mt-3 pt-3 border-t border-slate-50">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center">
+                        <ClipboardList className="w-3 h-3 text-slate-400" />
+                      </span>
+                      <span className="text-xs text-slate-500">{survey.fields?.length || 0}题</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-7 h-7 rounded-lg bg-green-50 flex items-center justify-center">
+                        <Users className="w-3 h-3 text-green-500" />
+                      </span>
+                      <span className="text-xs text-green-600 font-semibold">{responseCounts[survey.id] || 0} 回复</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 ml-auto">
+                      <span className="text-[11px] text-slate-300">{new Date(survey.created_at).toLocaleDateString()}</span>
+                    </div>
                   </div>
 
                   {/* Action buttons */}
-                  <div className="flex gap-1.5 pt-3 border-t border-gray-50" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      className="flex-1 h-9 rounded-xl bg-slate-900 text-white text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-slate-800 transition-colors active:scale-[0.97]"
+                      onClick={() => onNavigate('edit', survey.id)}
+                    >
+                      <Pencil className="w-3 h-3" />
+                      编辑
+                    </button>
                     <button
                       onClick={() => openShare(survey)}
-                      className="flex-1 text-xs py-2 rounded-lg bg-gray-50 hover:bg-indigo-50 text-gray-500 hover:text-indigo-600 transition-all active:scale-[0.97] font-medium"
+                      className="h-9 px-3 rounded-xl border border-slate-200 flex items-center justify-center hover:bg-indigo-50 hover:border-indigo-200 transition-colors"
+                      title="分享"
                     >
-                      分享
+                      <Link className="w-3.5 h-3.5 text-slate-500" />
                     </button>
                     <button
                       onClick={() => duplicateSurvey(survey)}
-                      className="flex-1 text-xs py-2 rounded-lg bg-gray-50 hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-all active:scale-[0.97] font-medium"
+                      className="h-9 px-3 rounded-xl border border-slate-200 flex items-center justify-center hover:bg-indigo-50 hover:border-indigo-200 transition-colors"
+                      title="复制"
                     >
-                      复制
-                    </button>
-                    <button
-                      onClick={() => toggleStatus(survey)}
-                      className="flex-1 text-xs py-2 rounded-lg bg-gray-50 hover:bg-green-50 text-gray-500 hover:text-green-600 transition-all active:scale-[0.97] font-medium"
-                    >
-                      {survey.status === 'published' ? '关闭' : '发布'}
+                      <Copy className="w-3.5 h-3.5 text-slate-500" />
                     </button>
                     <button
                       onClick={() => deleteSurvey(survey.id)}
-                      className="text-xs py-2 px-3 rounded-lg bg-gray-50 hover:bg-red-50 text-gray-400 hover:text-red-500 transition-all active:scale-[0.97]"
+                      className="h-9 px-3 rounded-xl border border-slate-200 flex items-center justify-center hover:bg-red-50 hover:border-red-200 transition-colors"
+                      title="删除"
                     >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                      <Trash2 className="w-3.5 h-3.5 text-red-400" />
                     </button>
                   </div>
                 </div>
@@ -684,12 +870,10 @@ function ListView({ onNavigate, profile }: { onNavigate: (v: View, id?: string) 
             {/* New survey card */}
             <button
               onClick={createSurvey}
-              className="border-2 border-dashed border-gray-200 rounded-2xl p-8 flex flex-col items-center justify-center text-gray-400 hover:border-indigo-300 hover:text-indigo-500 hover:bg-indigo-50/30 transition-all active:scale-[0.98] min-h-[200px]"
+              className="border-2 border-dashed border-slate-200 rounded-2xl p-8 flex flex-col items-center justify-center text-slate-400 hover:border-indigo-300 hover:text-indigo-500 hover:bg-indigo-50/30 transition-all active:scale-[0.98] min-h-[200px]"
             >
-              <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mb-3 group-hover:bg-indigo-100">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
-                </svg>
+              <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mb-3">
+                <Plus className="w-6 h-6" strokeWidth={1.5} />
               </div>
               <span className="text-sm font-medium">新建问卷</span>
             </button>
@@ -726,6 +910,48 @@ function ListView({ onNavigate, profile }: { onNavigate: (v: View, id?: string) 
         }}
       />
       {confirmDialog}
+      {showOnboarding && <OnboardingModal onClose={() => { setShowOnboarding(false); localStorage.setItem('onboarding_done', '1') }} />}
+    </div>
+  )
+}
+
+function OnboardingModal({ onClose }: { onClose: () => void }) {
+  const [step, setStep] = useState(0)
+  const steps = [
+    { icon: <Sparkles className="w-5 h-5 text-amber-500" />, title: '创建问卷', desc: '点击"新建问卷"、"AI 生成"或从模板库选择一个开始' },
+    { icon: <Pencil className="w-5 h-5 text-indigo-500" />, title: '编辑内容', desc: '拖拽添加题目，配置选项和逻辑，右侧实时预览效果' },
+    { icon: <Rocket className="w-5 h-5 text-green-500" />, title: '发布分享', desc: '点击发布后获取链接和二维码，一键分享到朋友圈' },
+  ]
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 animate-fadeIn">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden">
+        <div className="p-8 text-center">
+          <div className="mb-4 flex justify-center">{steps[step].icon}</div>
+          <h3 className="text-lg font-bold text-gray-800 mb-2">{steps[step].title}</h3>
+          <p className="text-sm text-gray-500 leading-relaxed">{steps[step].desc}</p>
+        </div>
+        <div className="flex justify-center gap-1.5 pb-4">
+          {steps.map((_, i) => (
+            <div key={i} className={`h-1.5 rounded-full transition-all ${i === step ? 'w-6 bg-indigo-500' : 'w-1.5 bg-gray-200'}`} />
+          ))}
+        </div>
+        <div className="px-6 pb-6 flex gap-3">
+          {step > 0 && (
+            <button onClick={() => setStep(step - 1)} className="flex-1 h-10 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+              上一步
+            </button>
+          )}
+          {step < steps.length - 1 ? (
+            <button onClick={() => setStep(step + 1)} className="flex-1 h-10 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors">
+              下一步
+            </button>
+          ) : (
+            <button onClick={onClose} className="flex-1 h-10 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors">
+              开始使用
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
@@ -743,13 +969,23 @@ function EditView({ surveyId, onBack }: { surveyId: string; onBack: () => void }
     await supabase.from('surveys').update({ ...data, updated_at: new Date().toISOString() }).eq('id', surveyId)
   }
 
+  const handleStatusChange = async (status: 'draft' | 'published' | 'closed') => {
+    await supabase.from('surveys').update({ status, updated_at: new Date().toISOString() }).eq('id', surveyId)
+    setSurvey(s => s ? { ...s, status } : s)
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-gray-400">加载中...</div>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center animate-pulse">
+            <FileText className="w-5 h-5 text-indigo-400" />
+          </div>
+          <p className="text-sm text-gray-400">加载问卷...</p>
+        </div>
       </div>
     )
   }
 
-  return <ErrorBoundary><EditorLayout survey={survey!} onSave={handleSave} onBack={onBack} /></ErrorBoundary>
+  return <ErrorBoundary><EditorLayout survey={survey!} onSave={handleSave} onBack={onBack} onStatusChange={handleStatusChange} /></ErrorBoundary>
 }

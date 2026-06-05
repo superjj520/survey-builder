@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { toast } from 'sonner'
+import { Check } from 'lucide-react'
 import { SurveyField, ThemeSettings } from '@/lib/types'
 import { parseMarkers, getSceneGradient, MOOD_MAP, MoodType, GameData, ChoiceOption } from '@/lib/marker-parser'
 import { ChatHeader } from './chat/ChatHeader'
@@ -188,6 +190,7 @@ export function ChatView({
   // ─── TTS (Edge TTS via server) ──────────────────────────────────────────────
 
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const ttsFailedRef = useRef(false)
 
   const speakText = useCallback(async (text: string) => {
     if (typeof window === 'undefined') return
@@ -199,17 +202,30 @@ export function ChatView({
       const resp = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: clean.slice(0, 500), voice: chatTtsVoice || '晓晓' }),
+        body: JSON.stringify({ text: clean.slice(0, 500) }),
       })
-      if (!resp.ok) return
-      const blob = await resp.blob()
-      const url = URL.createObjectURL(blob)
-      const audio = new Audio(url)
-      audioRef.current = audio
-      audio.play()
-      audio.onended = () => URL.revokeObjectURL(url)
+      if (resp.ok) {
+        const blob = await resp.blob()
+        const url = URL.createObjectURL(blob)
+        const audio = new Audio(url)
+        audioRef.current = audio
+        audio.play()
+        audio.onended = () => URL.revokeObjectURL(url)
+        return
+      }
     } catch {}
-  }, [chatTtsVoice])
+    // Fallback: Web Speech API
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel()
+      const utter = new SpeechSynthesisUtterance(clean.slice(0, 200))
+      utter.lang = 'zh-CN'
+      utter.rate = 1.0
+      window.speechSynthesis.speak(utter)
+    } else if (!ttsFailedRef.current) {
+      ttsFailedRef.current = true
+      toast.warning('语音暂不可用')
+    }
+  }, [])
 
   const getKeywordVoiceReply = useCallback((msgContent: string): string | null => {
     if (!chatVoiceTriggers || chatVoiceTriggers.length === 0) return null
@@ -285,7 +301,9 @@ export function ChatView({
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({ error: '请求失败' }))
-        setError((err as { error?: string }).error || '请求失败')
+        const errorMsg = (err as { error?: string }).error || '请求失败'
+        setError(errorMsg)
+        toast.error(errorMsg)
         setStreaming(false)
         return
       }
@@ -328,6 +346,8 @@ export function ChatView({
                 .replace(/\[STICKER:[^\]]*\]/g, '')
                 .replace(/\[RETRACT\]/g, '')
                 .replace(/\[VOICE:[^\]]*\]/g, '')
+                .replace(/\[COMPLETE\][\s\S]*$/, '')
+                .replace(/\[[^\]]*$/, '')
                 .trim()
               setMessages(prev => {
                 const updated = [...prev]
@@ -420,6 +440,7 @@ export function ChatView({
       setCurrentFieldIndex(prev => Math.min(prev + 1, answerableFields.length - 1))
     } catch {
       setError('网络错误，请重试')
+      toast.error('网络连接失败，请检查网络')
     } finally {
       setStreaming(false)
     }
@@ -475,7 +496,48 @@ export function ChatView({
 
   // ─── Effects ────────────────────────────────────────────────────────────────
 
+  const STORAGE_KEY = `chat_${surveyId}`
+
+  // Persist conversation
   useEffect(() => {
+    if (messages.length > 0 && !completed) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          messages, currentFieldIndex, bondLevel, milestonesAchieved, choiceHistory,
+        }))
+      } catch {}
+    }
+  }, [messages, bondLevel]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Initialize: restore from localStorage or start fresh
+  useEffect(() => {
+    // Try restoring saved conversation
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (saved) {
+        const data = JSON.parse(saved) as {
+          messages: ChatMessage[]
+          currentFieldIndex?: number
+          bondLevel?: number
+          milestonesAchieved?: string[]
+          choiceHistory?: { text: string; hint: string }[]
+        }
+        if (data.messages && data.messages.length > 0) {
+          setMessages(data.messages)
+          if (data.currentFieldIndex !== undefined) setCurrentFieldIndex(data.currentFieldIndex)
+          if (data.bondLevel !== undefined) setBondLevel(data.bondLevel)
+          if (data.milestonesAchieved) setMilestonesAchieved(data.milestonesAchieved)
+          if (data.choiceHistory) setChoiceHistory(data.choiceHistory)
+          toast.success('已恢复上次对话')
+          // Restore scene
+          const initialScene = chatInitialScene || chatScene
+          if (initialScene) handleSceneChange(initialScene)
+          return
+        }
+      }
+    } catch {}
+
+    // Normal init
     const initialScene = chatInitialScene || chatScene
     if (initialScene) handleSceneChange(initialScene)
     if (chatOpening) {
@@ -488,6 +550,13 @@ export function ChatView({
       sendToApi([])
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Clear persistence on completion
+  useEffect(() => {
+    if (completed) {
+      try { localStorage.removeItem(STORAGE_KEY) } catch {}
+    }
+  }, [completed, STORAGE_KEY])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -533,34 +602,41 @@ export function ChatView({
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4">
         <div className="max-w-lg mx-auto space-y-3">
-          {messages.map((msg, idx) => (
-            <ChatBubble
-              key={idx}
-              content={msg.content}
-              role={msg.role}
-              mood={msg.mood}
-              isRetracted={msg.isRetracted}
-              isChoice={msg.isChoice}
-              sticker={msg.sticker}
-              stickerPacks={chatStickerPacks}
-              roleName={roleName}
-              avatarUrl={getAvatarForMood(msg.mood || 'neutral')}
-              isDarkScene={isDarkScene}
-              ttsEnabled={chatTtsEnabled}
-              onSpeak={speakText}
-              bubbleAnimation={bubbleAnimation}
-            />
-          ))}
+          {messages.map((msg, idx) => {
+            const prevMsg = messages[idx - 1]
+            const isGrouped = prevMsg && prevMsg.role === msg.role
+            return (
+              <ChatBubble
+                key={idx}
+                content={msg.content}
+                role={msg.role}
+                mood={msg.mood}
+                isRetracted={msg.isRetracted}
+                isChoice={msg.isChoice}
+                sticker={msg.sticker}
+                stickerPacks={chatStickerPacks}
+                roleName={roleName}
+                avatarUrl={getAvatarForMood(msg.mood || 'neutral')}
+                isDarkScene={isDarkScene}
+                ttsEnabled={chatTtsEnabled}
+                onSpeak={speakText}
+                bubbleAnimation={bubbleAnimation}
+                isGrouped={isGrouped}
+                isStreaming={streaming && idx === messages.length - 1 && msg.role === 'assistant'}
+              />
+            )
+          })}
 
           {typingDelay && (
             <div className="flex justify-start animate-chatSlideLeft">
               <div className="relative flex-shrink-0 mr-2 mt-1">
                 <img src={avatarUrl} alt={roleName} className="w-8 h-8 rounded-full bg-gray-100 shadow-sm" />
               </div>
-              <div className={`rounded-2xl px-4 py-2.5 text-sm rounded-bl-md ${isDarkScene ? 'bg-white/10 border border-white/10' : 'bg-white shadow-sm border border-gray-100'}`}>
-                <div className="flex items-center gap-2 animate-typingBreath">
-                  <span className="text-xs text-gray-400">{roleName}正在输入</span>
-                  <span className={`animate-cursorBlink ${isDarkScene ? 'text-gray-300' : 'text-gray-500'}`}>|</span>
+              <div className={`rounded-2xl px-4 py-3 rounded-bl-md ${isDarkScene ? 'bg-white/10 border border-white/10' : 'bg-white shadow-sm border border-gray-100'}`}>
+                <div className="flex items-center gap-1">
+                  <span className={`w-2 h-2 rounded-full animate-typingDot ${isDarkScene ? 'bg-gray-300' : 'bg-gray-400'}`} style={{ animationDelay: '0ms' }} />
+                  <span className={`w-2 h-2 rounded-full animate-typingDot ${isDarkScene ? 'bg-gray-300' : 'bg-gray-400'}`} style={{ animationDelay: '200ms' }} />
+                  <span className={`w-2 h-2 rounded-full animate-typingDot ${isDarkScene ? 'bg-gray-300' : 'bg-gray-400'}`} style={{ animationDelay: '400ms' }} />
                 </div>
               </div>
             </div>
@@ -569,9 +645,7 @@ export function ChatView({
           {completed && (
             <div className="text-center py-4">
               <div className="inline-flex items-center gap-2 bg-green-50 text-green-700 px-4 py-2 rounded-full text-sm font-medium">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+                <Check className="w-4 h-4" />
                 {submitting ? '提交中...' : '对话完成，正在提交...'}
               </div>
             </div>

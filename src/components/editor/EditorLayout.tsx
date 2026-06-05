@@ -6,25 +6,44 @@ import { EditorProvider, useEditor } from './EditorContext'
 import { FieldCanvas } from './FieldCanvas'
 import { SettingsPanel } from './SettingsPanel'
 import { SurveyPreview } from './SurveyPreview'
+import { ShareModal } from './ShareModal'
 import { Button } from '@/components/ui/button'
 import { Survey, SurveyResponse, SurveyField, FIELD_TYPE_LABELS, PLAN_LIMITS } from '@/lib/types'
 import { supabase } from '@/lib/supabase'
 import { getProfile } from '@/lib/auth'
 import { exportToCSV, exportToExcel } from '@/lib/export'
+import { ChevronLeft, Undo2, Redo2, Share2, ClipboardList, Eye, BarChart3, Settings, Download, ChevronDown, ChevronRight, Filter, Loader2 } from 'lucide-react'
 
 interface EditorLayoutProps {
   survey?: Survey
   onSave: (data: { title: string; description: string; fields: unknown[]; settings: unknown }) => Promise<void>
   onBack?: () => void
+  onStatusChange?: (status: 'draft' | 'published' | 'closed') => Promise<void>
 }
 
-function EditorContent({ onSave, onBack, surveyId }: { onSave: EditorLayoutProps['onSave']; onBack?: () => void; surveyId?: string }) {
-  const { state, dispatch } = useEditor()
+function EditorContent({ onSave, onBack, surveyId, survey, onStatusChange }: { onSave: EditorLayoutProps['onSave']; onBack?: () => void; surveyId?: string; survey?: Survey; onStatusChange?: EditorLayoutProps['onStatusChange'] }) {
+  const { state, dispatch, undo, redo, canUndo, canRedo } = useEditor()
   const [activeTab, setActiveTab] = useState<'questions' | 'responses' | 'settings' | 'preview'>(
     state.settings.displayMode === 'chat' ? 'settings' : 'questions'
   )
   const [saving, setSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<string | null>(null)
+  const [surveyStatus, setSurveyStatus] = useState<'draft' | 'published' | 'closed'>(survey?.status || 'draft')
+  const [showShare, setShowShare] = useState(false)
+  const [publishing, setPublishing] = useState(false)
+  const [responseCount, setResponseCount] = useState<number | null>(null)
+
+  // Fetch response count
+  useEffect(() => {
+    if (!surveyId) return
+    const fetchCount = () => {
+      supabase.from('responses').select('id', { count: 'exact', head: true }).eq('survey_id', surveyId)
+        .then(({ count }) => { if (count !== null) setResponseCount(count) })
+    }
+    fetchCount()
+    const interval = setInterval(fetchCount, 30000)
+    return () => clearInterval(interval)
+  }, [surveyId])
 
   const handleSave = useCallback(async () => {
     setSaving(true)
@@ -52,66 +71,137 @@ function EditorContent({ onSave, onBack, surveyId }: { onSave: EditorLayoutProps
     return () => clearTimeout(timer)
   }, [state.isDirty, handleSave])
 
-  // Keyboard shortcut: Ctrl/Cmd+S to save
+  // Keyboard shortcuts: Ctrl/Cmd+S save, Ctrl/Cmd+Z undo, Ctrl/Cmd+Shift+Z redo
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault()
         if (state.isDirty) handleSave()
       }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        undo()
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && e.shiftKey) {
+        e.preventDefault()
+        redo()
+      }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [state.isDirty, handleSave])
+  }, [state.isDirty, handleSave, undo, redo])
+
+  const handlePublishToggle = async () => {
+    if (!onStatusChange || !survey) return
+    setPublishing(true)
+    try {
+      const newStatus = surveyStatus === 'published' ? 'draft' : 'published'
+      // Auto-save first if dirty
+      if (state.isDirty) await handleSave()
+      await onStatusChange(newStatus)
+      setSurveyStatus(newStatus)
+      toast.success(newStatus === 'published' ? '问卷已发布' : '已取消发布')
+      if (newStatus === 'published') setShowShare(true)
+    } catch {
+      toast.error('操作失败')
+    } finally {
+      setPublishing(false)
+    }
+  }
+
+  const shareUrl = survey ? `${typeof window !== 'undefined' ? window.location.origin : ''}/s/?id=${survey.share_id}` : ''
 
   const TAB_ICONS = {
-    questions: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>,
-    preview: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>,
-    responses: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
-    settings: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
+    questions: <ClipboardList className="w-4 h-4" />,
+    preview: <Eye className="w-4 h-4" />,
+    responses: <BarChart3 className="w-4 h-4" />,
+    settings: <Settings className="w-4 h-4" />,
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-screen flex flex-col bg-slate-50">
       {/* Top bar */}
-      <header className="bg-white border-b shadow-sm flex-shrink-0">
+      <header className="bg-white border-b border-slate-100 flex-shrink-0" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
         <div className="px-4 py-2.5 flex items-center gap-3">
           {onBack && (
-            <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-lg transition-colors active:scale-95">
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
+            <button onClick={onBack} className="w-9 h-9 flex items-center justify-center hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors active:scale-95">
+              <ChevronLeft className="w-4 h-4 text-slate-600" />
             </button>
           )}
           <div className="flex-1 min-w-0">
-            <input
-              value={state.title}
-              onChange={(e) => dispatch({ type: 'SET_TITLE', payload: e.target.value })}
-              className="text-base sm:text-lg font-semibold text-gray-800 border-none outline-none bg-transparent w-full truncate hover:bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-100 px-2 py-1 rounded-lg transition-all"
-              placeholder="未命名问卷"
-            />
+            <div className="flex items-center gap-2">
+              <input
+                value={state.title}
+                onChange={(e) => dispatch({ type: 'SET_TITLE', payload: e.target.value })}
+                className="text-sm sm:text-base font-bold text-slate-900 border-none outline-none bg-transparent w-full truncate hover:bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-100 px-2 py-1 rounded-lg transition-all"
+                placeholder="未命名问卷"
+              />
+              {/* Status dot */}
+              {surveyStatus === 'published' && (
+                <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" style={{ boxShadow: '0 0 0 3px rgba(34,197,94,0.2)' }} />
+              )}
+            </div>
+            <span className="text-[11px] text-slate-400 px-2">
+              {state.isDirty ? '未保存的更改' : lastSaved ? `自动保存于 ${lastSaved}` : ''}
+            </span>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {lastSaved && !state.isDirty && (
-              <span className="text-xs text-gray-400 items-center gap-1 hidden sm:flex">
-                <svg className="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-                {lastSaved}
-              </span>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {/* Undo/Redo combined button group */}
+            <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden">
+              <button
+                onClick={undo}
+                disabled={!canUndo}
+                title="撤销 (Ctrl+Z)"
+                className="w-8 h-8 flex items-center justify-center hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors border-r border-slate-200"
+              >
+                <Undo2 className="w-3.5 h-3.5 text-slate-600" />
+              </button>
+              <button
+                onClick={redo}
+                disabled={!canRedo}
+                title="重做 (Ctrl+Shift+Z)"
+                className="w-8 h-8 flex items-center justify-center hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <Redo2 className="w-3.5 h-3.5 text-slate-600" />
+              </button>
+            </div>
+            {/* Save button - show only when dirty */}
+            {state.isDirty && (
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="h-9 px-4 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all active:scale-95 disabled:opacity-40 flex items-center gap-1.5"
+              >
+                {saving ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : null}
+                {saving ? '保存中' : '保存'}
+              </button>
             )}
-            {state.isDirty && <span className="text-xs text-amber-500 font-medium hidden sm:block">有更改</span>}
-            <Button
-              onClick={handleSave}
-              disabled={!state.isDirty || saving}
-              size="sm"
-              className="bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-all active:scale-95 disabled:opacity-40"
-            >
-              {saving ? (
-                <span className="flex items-center gap-1.5">
-                  <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                  保存中
-                </span>
-              ) : '保存'}
-            </Button>
+            {survey && onStatusChange && (
+              <>
+                {surveyStatus === 'published' && (
+                  <button
+                    onClick={() => setShowShare(true)}
+                    className="h-9 px-3.5 rounded-xl text-xs font-semibold border border-slate-200 text-slate-600 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600 transition-all flex items-center gap-1.5"
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">分享</span>
+                  </button>
+                )}
+                <button
+                  onClick={handlePublishToggle}
+                  disabled={publishing}
+                  className="h-9 px-4 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 text-white"
+                  style={surveyStatus === 'published'
+                    ? { background: '#16a34a', boxShadow: '0 2px 8px rgba(22,163,74,0.25)' }
+                    : { background: 'linear-gradient(135deg, #6366f1, #7c3aed)', boxShadow: '0 2px 8px rgba(99,102,241,0.25)' }
+                  }
+                >
+                  {publishing ? '...' : surveyStatus === 'published' ? '已发布 ✓' : '发布'}
+                </button>
+              </>
+            )}
           </div>
         </div>
         {/* Tabs */}
@@ -133,6 +223,11 @@ function EditorContent({ onSave, onBack, surveyId }: { onSave: EditorLayoutProps
             >
               {TAB_ICONS[tab.key]}
               {tab.label}
+              {tab.key === 'responses' && responseCount !== null && responseCount > 0 && (
+                <span className="ml-1 min-w-[18px] h-[18px] px-1 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-bold flex items-center justify-center">
+                  {responseCount > 99 ? '99+' : responseCount}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -141,26 +236,33 @@ function EditorContent({ onSave, onBack, surveyId }: { onSave: EditorLayoutProps
       {/* Body */}
       <main className="flex-1 overflow-hidden">
         {activeTab === 'questions' && <FieldCanvas />}
-        {activeTab === 'preview' && <SurveyPreview fields={state.fields} settings={state.settings} title={state.title} description={state.description} />}
+        {activeTab === 'preview' && <SurveyPreview fields={state.fields} settings={state.settings} title={state.title} description={state.description} shareId={survey?.share_id} />}
         {activeTab === 'responses' && <ResponsesTab surveyId={surveyId} fields={state.fields} title={state.title} />}
         {activeTab === 'settings' && <SettingsPanel />}
       </main>
+
+      {showShare && survey && (
+        <ShareModal open={true} onClose={() => setShowShare(false)} shareUrl={shareUrl} title={state.title} />
+      )}
     </div>
   )
 }
 
-export function EditorLayout({ survey, onSave, onBack }: EditorLayoutProps) {
+export function EditorLayout({ survey, onSave, onBack, onStatusChange }: EditorLayoutProps) {
   return (
     <EditorProvider>
       {survey && <EditorInitializer survey={survey} />}
-      <EditorContent onSave={onSave} onBack={onBack} surveyId={survey?.id} />
+      <EditorContent onSave={onSave} onBack={onBack} surveyId={survey?.id} survey={survey} onStatusChange={onStatusChange} />
     </EditorProvider>
   )
 }
 
 function EditorInitializer({ survey }: { survey: Survey }) {
   const { dispatch } = useEditor()
+  const loadedRef = React.useRef(false)
   useEffect(() => {
+    if (loadedRef.current) return
+    loadedRef.current = true
     dispatch({
       type: 'LOAD_SURVEY',
       payload: {
@@ -180,6 +282,11 @@ function ResponsesTab({ surveyId, fields, title }: { surveyId?: string; fields: 
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<'stats' | 'individual'>('stats')
   const [selectedIndex, setSelectedIndex] = useState(0)
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [filterField, setFilterField] = useState('')
+  const [filterValue, setFilterValue] = useState('')
+  const [showFilters, setShowFilters] = useState(false)
 
   useEffect(() => {
     if (!surveyId) { setLoading(false); return }
@@ -199,7 +306,7 @@ function ResponsesTab({ surveyId, fields, title }: { surveyId?: string; fields: 
 
   const handleExport = async () => {
     if (!(await checkExportPermission())) return
-    const csv = exportToCSV(fields, responses)
+    const csv = exportToCSV(fields, filteredResponses)
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -211,8 +318,21 @@ function ResponsesTab({ surveyId, fields, title }: { surveyId?: string; fields: 
 
   const handleExportExcel = async () => {
     if (!(await checkExportPermission())) return
-    await exportToExcel(fields, responses, title)
+    await exportToExcel(fields, filteredResponses, title)
   }
+
+  // Filter responses
+  const filteredResponses = responses.filter(r => {
+    if (dateFrom && r.submitted_at < dateFrom) return false
+    if (dateTo && r.submitted_at > dateTo + 'T23:59:59.999Z') return false
+    if (filterField && filterValue) {
+      const val = r.answers[filterField]
+      if (val === undefined || val === null) return false
+      const strVal = Array.isArray(val) ? val.join(', ') : String(val)
+      if (!strVal.toLowerCase().includes(filterValue.toLowerCase())) return false
+    }
+    return true
+  })
 
   if (loading) return <div className="flex items-center justify-center h-full text-gray-400">加载中...</div>
   if (!surveyId) return <div className="flex items-center justify-center h-full text-gray-400">请先保存问卷</div>
@@ -223,24 +343,117 @@ function ResponsesTab({ surveyId, fields, title }: { surveyId?: string; fields: 
         {/* Summary */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
           <div className="bg-white rounded-xl p-4 sm:p-5 shadow-sm text-center">
-            <p className="text-2xl sm:text-3xl font-bold text-indigo-600">{responses.length}</p>
-            <p className="text-xs sm:text-sm text-gray-500 mt-1">总回复数</p>
+            <p className="text-2xl sm:text-3xl font-bold text-indigo-600">{filteredResponses.length}</p>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">总回复数{filteredResponses.length !== responses.length ? ` (共${responses.length})` : ''}</p>
           </div>
           <div className="bg-white rounded-xl p-4 sm:p-5 shadow-sm text-center">
             <p className="text-2xl sm:text-3xl font-bold text-green-600">
-              {responses.length > 0 ? Math.round((responses.filter(r => Object.keys(r.answers).length === fields.length).length / responses.length) * 100) : 0}%
+              {filteredResponses.length > 0 ? Math.round((filteredResponses.filter(r => Object.keys(r.answers).length === fields.length).length / filteredResponses.length) * 100) : 0}%
             </p>
             <p className="text-xs sm:text-sm text-gray-500 mt-1">完成率</p>
           </div>
           <div className="bg-white rounded-xl p-4 sm:p-5 shadow-sm text-center col-span-2 sm:col-span-1">
             <p className="text-base sm:text-lg font-bold text-amber-600">
-              {responses.length > 0 ? new Date(responses[0].submitted_at).toLocaleDateString() : '-'}
+              {filteredResponses.length > 0 ? new Date(filteredResponses[0].submitted_at).toLocaleDateString() : '-'}
             </p>
             <p className="text-xs sm:text-sm text-gray-500 mt-1">最近回复</p>
           </div>
         </div>
 
+        {/* 7-day trend mini chart */}
         {responses.length > 0 && (
+          <div className="bg-white rounded-xl p-4 shadow-sm mb-4">
+            <p className="text-xs text-gray-400 mb-3">近 7 天回复趋势</p>
+            <DailyTrendChart responses={responses} />
+          </div>
+        )}
+
+        {/* Filters */}
+        {responses.length > 0 && (
+          <div className="mb-4">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors mb-2"
+            >
+              <Filter className="w-3.5 h-3.5" />
+              筛选{(dateFrom || dateTo || filterValue) ? ` (已启用)` : ''}
+              <ChevronDown className={`w-3 h-3 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+            </button>
+            {showFilters && (
+              <div className="bg-white rounded-xl p-4 shadow-sm space-y-3 animate-fadeIn">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] text-gray-400 mb-1 block">开始日期</label>
+                    <input
+                      type="date"
+                      value={dateFrom}
+                      onChange={(e) => setDateFrom(e.target.value)}
+                      className="w-full text-xs border rounded-lg px-2.5 py-1.5 text-gray-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-gray-400 mb-1 block">结束日期</label>
+                    <input
+                      type="date"
+                      value={dateTo}
+                      onChange={(e) => setDateTo(e.target.value)}
+                      className="w-full text-xs border rounded-lg px-2.5 py-1.5 text-gray-600"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] text-gray-400 mb-1 block">按字段</label>
+                    <select
+                      value={filterField}
+                      onChange={(e) => { setFilterField(e.target.value); setFilterValue('') }}
+                      className="w-full text-xs border rounded-lg px-2.5 py-1.5 text-gray-600"
+                    >
+                      <option value="">不筛选</option>
+                      {fields.filter(f => f.type !== 'section').map(f => (
+                        <option key={f.id} value={f.id}>{f.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-gray-400 mb-1 block">包含值</label>
+                    {filterField && fields.find(f => f.id === filterField)?.options ? (
+                      <select
+                        value={filterValue}
+                        onChange={(e) => setFilterValue(e.target.value)}
+                        className="w-full text-xs border rounded-lg px-2.5 py-1.5 text-gray-600"
+                      >
+                        <option value="">全部</option>
+                        {fields.find(f => f.id === filterField)!.options!.map(opt => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        value={filterValue}
+                        onChange={(e) => setFilterValue(e.target.value)}
+                        placeholder="搜索..."
+                        disabled={!filterField}
+                        className="w-full text-xs border rounded-lg px-2.5 py-1.5 text-gray-600 disabled:bg-gray-50"
+                      />
+                    )}
+                  </div>
+                </div>
+                {(dateFrom || dateTo || filterValue) && (
+                  <button
+                    onClick={() => { setDateFrom(''); setDateTo(''); setFilterField(''); setFilterValue('') }}
+                    className="text-xs text-indigo-600 hover:text-indigo-700"
+                  >
+                    清除筛选
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {filteredResponses.length > 0 && (
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
               <button
@@ -258,9 +471,9 @@ function ResponsesTab({ surveyId, fields, title }: { surveyId?: string; fields: 
             </div>
             <div className="relative group">
               <Button variant="outline" size="sm" className="gap-1">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                <Download className="w-3.5 h-3.5" />
                 导出
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                <ChevronDown className="w-3 h-3" />
               </Button>
               <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 w-36 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
                 <button onClick={handleExportExcel} className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
@@ -276,15 +489,15 @@ function ResponsesTab({ surveyId, fields, title }: { surveyId?: string; fields: 
           </div>
         )}
 
-        {responses.length === 0 ? (
+        {filteredResponses.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
-            <p className="text-lg mb-1">暂无回复</p>
-            <p className="text-sm">发布并分享问卷后，回复数据将在此展示</p>
+            <p className="text-lg mb-1">{responses.length === 0 ? '暂无回复' : '无匹配结果'}</p>
+            <p className="text-sm">{responses.length === 0 ? '发布并分享问卷后，回复数据将在此展示' : '调整筛选条件试试'}</p>
           </div>
         ) : viewMode === 'stats' ? (
           <div className="space-y-4">
             {fields.map((field) => {
-              const values = responses.map(r => r.answers[field.id]).filter(v => v != null)
+              const values = filteredResponses.map(r => r.answers[field.id]).filter(v => v != null)
               return (
                 <div key={field.id} className="bg-white rounded-xl p-5 shadow-sm">
                   <h3 className="font-medium text-gray-800 mb-1">{field.label}</h3>
@@ -303,28 +516,28 @@ function ResponsesTab({ surveyId, fields, title }: { surveyId?: string; fields: 
                 disabled={selectedIndex === 0}
                 className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 transition-colors"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/></svg>
+                <ChevronLeft className="w-5 h-5" />
               </button>
               <span className="text-sm text-gray-600 font-medium">
-                第 {selectedIndex + 1} / {responses.length} 份
+                第 {selectedIndex + 1} / {filteredResponses.length} 份
               </span>
               <button
-                onClick={() => setSelectedIndex(Math.min(responses.length - 1, selectedIndex + 1))}
-                disabled={selectedIndex === responses.length - 1}
+                onClick={() => setSelectedIndex(Math.min(filteredResponses.length - 1, selectedIndex + 1))}
+                disabled={selectedIndex === filteredResponses.length - 1}
                 className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 transition-colors"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
+                <ChevronRight className="w-5 h-5" />
               </button>
             </div>
 
             {/* Response detail */}
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
               <div className="px-5 py-3 border-b border-gray-50 text-xs text-gray-400">
-                提交时间：{new Date(responses[selectedIndex].submitted_at).toLocaleString()}
+                提交时间：{new Date(filteredResponses[selectedIndex].submitted_at).toLocaleString()}
               </div>
               <div className="divide-y divide-gray-50">
                 {fields.map((field) => {
-                  const answer = responses[selectedIndex].answers[field.id]
+                  const answer = filteredResponses[selectedIndex].answers[field.id]
                   return (
                     <div key={field.id} className="px-5 py-4">
                       <p className="text-xs text-gray-400 mb-1">{field.label}</p>
@@ -340,6 +553,39 @@ function ResponsesTab({ surveyId, fields, title }: { surveyId?: string; fields: 
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+function DailyTrendChart({ responses }: { responses: SurveyResponse[] }) {
+  // Calculate daily counts for last 7 days
+  const days: { label: string; count: number }[] = []
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date()
+    date.setDate(date.getDate() - i)
+    const dateStr = date.toISOString().slice(0, 10)
+    const count = responses.filter(r => r.submitted_at.slice(0, 10) === dateStr).length
+    days.push({ label: date.toLocaleDateString(undefined, { weekday: 'short' }), count })
+  }
+  const maxCount = Math.max(...days.map(d => d.count), 1)
+
+  return (
+    <div className="flex items-end gap-1.5 h-16">
+      {days.map((day, i) => (
+        <div key={i} className="flex-1 flex flex-col items-center gap-1">
+          <div className="w-full relative flex items-end justify-center h-10">
+            <div
+              className="w-full rounded-t transition-all duration-300 bg-indigo-400 hover:bg-indigo-500 min-h-[2px]"
+              style={{ height: `${maxCount > 0 ? (day.count / maxCount) * 100 : 0}%` }}
+              title={`${day.count} 条`}
+            />
+            {day.count > 0 && (
+              <span className="absolute -top-4 text-[10px] text-indigo-600 font-medium">{day.count}</span>
+            )}
+          </div>
+          <span className="text-[10px] text-gray-400">{day.label}</span>
+        </div>
+      ))}
     </div>
   )
 }

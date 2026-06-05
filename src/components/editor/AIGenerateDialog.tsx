@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { SurveyField } from '@/lib/types'
 import { nanoid } from 'nanoid'
+import { Zap, Check, ArrowUp } from 'lucide-react'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -164,7 +165,7 @@ export function AIGenerateDialog({ open, onClose, userId, onGenerated }: AIGener
       <DialogContent className="max-w-lg p-0 overflow-hidden max-h-[85vh] flex flex-col">
         <DialogTitle className="px-5 pt-4 pb-2 border-b text-base font-semibold flex items-center gap-2">
           <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
-            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            <Zap className="w-4 h-4 text-white" />
           </span>
           AI 生成问卷
         </DialogTitle>
@@ -194,7 +195,7 @@ export function AIGenerateDialog({ open, onClose, userId, onGenerated }: AIGener
         {generated && (
           <div className="mx-4 mb-3 p-4 bg-green-50 border border-green-200 rounded-xl">
             <div className="flex items-center gap-2 mb-2">
-              <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+              <Check className="w-4 h-4 text-green-600" />
               <span className="text-sm font-medium text-green-800">问卷已生成</span>
             </div>
             <p className="text-sm font-medium text-gray-800">{generated.title}</p>
@@ -229,7 +230,7 @@ export function AIGenerateDialog({ open, onClose, userId, onGenerated }: AIGener
                 disabled={!input.trim() || streaming}
                 className="h-10 w-10 p-0 bg-indigo-600 hover:bg-indigo-700 rounded-xl"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19V5m0 0l-7 7m7-7l7 7" /></svg>
+                <ArrowUp className="w-4 h-4" />
               </Button>
             </div>
           </div>

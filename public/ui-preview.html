@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>趣测小屋 UI 优化对比稿</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+* { font-family: 'Inter', -apple-system, system-ui, sans-serif; }
+.comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 2rem 0; }
+@media (max-width: 1024px) { .comparison { grid-template-columns: 1fr; } }
+.label-old { background: #fee2e2; color: #b91c1c; }
+.label-new { background: #dcfce7; color: #15803d; }
+.phone-frame {
+  width: 375px; height: 720px; border-radius: 40px; overflow: hidden;
+  border: 8px solid #1f2937; box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+  position: relative; background: white;
+}
+.phone-frame::before {
+  content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 120px; height: 24px; background: #1f2937; border-radius: 0 0 16px 16px; z-index: 10;
+}
+.phone-content { height: 100%; overflow-y: auto; padding-top: 24px; }
+section { border-bottom: 1px solid #e5e7eb; padding: 3rem 0; }
+h2.section-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; }
+.badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+
+/* New design tokens */
+:root {
+  --primary: #6366f1;
+  --primary-light: #eef2ff;
+  --surface: #ffffff;
+  --bg: #f8fafc;
+  --text-1: #0f172a;
+  --text-2: #475569;
+  --text-3: #94a3b8;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,0.08);
+}
+
+/* Animations for new design */
+@keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(99,102,241,0.3); } 70% { box-shadow: 0 0 0 8px rgba(99,102,241,0); } }
+.anim-slide-up { animation: slideUp 0.4s ease-out forwards; }
+.anim-scale-in { animation: scaleIn 0.3s ease-out forwards; }
+
+/* Smooth option hover */
+.option-new { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+.option-new:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(99,102,241,0.1); }
+.option-new:active { transform: scale(0.98); }
+.option-new.selected { animation: pulse-ring 0.6s ease-out; }
+</style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+<!-- Header -->
+<header class="bg-white border-b border-gray-100 sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-extrabold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">趣测小屋 UI 优化对比稿</h1>
+      <p class="text-sm text-gray-400 mt-0.5">交互体验全面升级方案 - 2026.06.04</p>
+    </div>
+    <div class="flex gap-2">
+      <span class="badge label-old">优化前</span>
+      <span class="badge label-new">优化后</span>
+    </div>
+  </div>
+</header>
+
+<div class="max-w-7xl mx-auto px-6 py-8">
+
+<!-- ===================== SECTION 1: LANDING PAGE ===================== -->
+<section>
+  <h2 class="section-title">1. 答题 Landing Page</h2>
+  <p class="text-gray-500 mb-6">优化点：减少视觉噪音、增强层次感、CTA 按钮更有号召力、加入微动效暗示</p>
+
+  <div class="comparison">
+    <!-- OLD -->
+    <div>
+      <span class="badge label-old mb-3 block w-fit">优化前</span>
+      <div class="phone-frame mx-auto">
+        <div class="phone-content" style="background: #f0ebf8; padding: 24px 16px;">
+          <div style="background: white; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden;">
+            <div style="height: 8px; background: #6366f1;"></div>
+            <div style="padding: 32px;">
+              <h1 style="font-size: 22px; font-weight: 700; color: #111;">你是什么性格类型？</h1>
+              <p style="color: #6b7280; margin-top: 8px; font-size: 14px; line-height: 1.6;">通过几道简单的测试题，发现你的隐藏性格</p>
+              <div style="display: flex; gap: 24px; margin-top: 24px; font-size: 13px; color: #9ca3af;">
+                <span>7 道题</span>
+                <span>约 4 分钟</span>
+              </div>
+              <button style="width: 100%; margin-top: 32px; height: 52px; border-radius: 12px; background: #6366f1; color: white; font-size: 16px; font-weight: 500; border: none;">
+                开始答题 →
+              </button>
+            </div>
+          </div>
+          <p style="text-align: center; font-size: 11px; color: #d1d5db; margin-top: 16px;">您的回答将被安全保存</p>
+        </div>
+      </div>
+      <div class="mt-4 text-xs text-gray-400 space-y-1">
+        <p>- 卡片内容层次扁平</p>
+        <p>- CTA 按钮缺乏视觉重量</p>
+        <p>- 信息排列单调</p>
+        <p>- 无情感化设计元素</p>
+      </div>
+    </div>
+
+    <!-- NEW -->
+    <div>
+      <span class="badge label-new mb-3 block w-fit">优化后</span>
+      <div class="phone-frame mx-auto">
+        <div class="phone-content" style="background: linear-gradient(160deg, #eef2ff 0%, #faf5ff 50%, #f0f9ff 100%); padding: 24px 16px;">
+          <div style="background: white; border-radius: 24px; box-shadow: 0 8px 32px rgba(99,102,241,0.08); overflow: hidden;" class="anim-scale-in">
+            <!-- Decorative top -->
+            <div style="height: 4px; background: linear-gradient(90deg, #6366f1, #a855f7, #6366f1); background-size: 200% 100%; animation: shimmer 3s infinite;"></div>
+
+            <div style="padding: 36px 28px;">
+              <!-- Emoji badge -->
+              <div style="width: 56px; height: 56px; border-radius: 16px; background: linear-gradient(135deg, #eef2ff, #faf5ff); display: flex; align-items: center; justify-content: center; font-size: 28px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(99,102,241,0.1);">
+                🧠
+              </div>
+
+              <h1 style="font-size: 24px; font-weight: 800; color: #0f172a; line-height: 1.3; letter-spacing: -0.3px;">你是什么性格类型？</h1>
+              <p style="color: #64748b; margin-top: 10px; font-size: 15px; line-height: 1.7;">通过几道简单的测试题，发现你的隐藏性格</p>
+
+              <!-- Stats pills -->
+              <div style="display: flex; gap: 10px; margin-top: 24px;">
+                <div style="display: flex; align-items: center; gap: 8px; background: #f8fafc; border-radius: 10px; padding: 10px 14px;">
+                  <div style="width: 32px; height: 32px; border-radius: 8px; background: #eef2ff; display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 14px;">📋</span>
+                  </div>
+                  <div>
+                    <div style="font-size: 14px; font-weight: 700; color: #1e293b;">7</div>
+                    <div style="font-size: 11px; color: #94a3b8;">道题</div>
+                  </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; background: #f8fafc; border-radius: 10px; padding: 10px 14px;">
+                  <div style="width: 32px; height: 32px; border-radius: 8px; background: #f0fdf4; display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 14px;">⏱️</span>
+                  </div>
+                  <div>
+                    <div style="font-size: 14px; font-weight: 700; color: #1e293b;">2分钟</div>
+                    <div style="font-size: 11px; color: #94a3b8;">预计用时</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- CTA Button -->
+              <button style="width: 100%; margin-top: 28px; height: 56px; border-radius: 14px; background: linear-gradient(135deg, #6366f1, #7c3aed); color: white; font-size: 17px; font-weight: 700; border: none; box-shadow: 0 4px 16px rgba(99,102,241,0.3); letter-spacing: 0.3px; position: relative; overflow: hidden;">
+                <span>开始测试</span>
+                <span style="margin-left: 8px; display: inline-block; animation: bounce 1.5s infinite;">→</span>
+              </button>
+
+              <!-- Social proof -->
+              <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 16px;">
+                <div style="display: flex;">
+                  <div style="width: 20px; height: 20px; border-radius: 50%; background: #c4b5fd; border: 2px solid white;"></div>
+                  <div style="width: 20px; height: 20px; border-radius: 50%; background: #f9a8d4; border: 2px solid white; margin-left: -6px;"></div>
+                  <div style="width: 20px; height: 20px; border-radius: 50%; background: #93c5fd; border: 2px solid white; margin-left: -6px;"></div>
+                </div>
+                <span style="font-size: 12px; color: #94a3b8;">328人已完成</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Branding -->
+          <div style="text-align: center; margin-top: 20px;">
+            <span style="font-size: 11px; color: #cbd5e1;">由 趣测小屋 提供技术支持</span>
+          </div>
+        </div>
+      </div>
+      <div class="mt-4 text-xs text-green-600 space-y-1">
+        <p>+ Emoji badge 增加情感化</p>
+        <p>+ 信息卡片式排列，层次清晰</p>
+        <p>+ 渐变 CTA + 投影，视觉权重强</p>
+        <p>+ 社交证明（已有N人完成）</p>
+        <p>+ 微妙渐变背景，高级感</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION 2: RADIO OPTIONS ===================== -->
+<section>
+  <h2 class="section-title">2. 单选题交互</h2>
+  <p class="text-gray-500 mb-6">优化点：增强选中反馈、hover 微动效、间距优化、选项字体层次</p>
+
+  <div class="comparison">
+    <!-- OLD -->
+    <div>
+      <span class="badge label-old mb-3 block w-fit">优化前</span>
+      <div class="phone-frame mx-auto">
+        <div class="phone-content" style="background: #f0ebf8; padding: 24px 16px;">
+          <div style="background: white; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); border-left: 4px solid #6366f1; padding: 24px;">
+            <h3 style="font-size: 15px; font-weight: 500; color: #1f2937;">
+              <span style="color: #9ca3af; margin-right: 6px;">1.</span>
+              周末你通常怎么度过？
+              <span style="color: #ef4444; margin-left: 4px;">*</span>
+            </h3>
+            <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 8px; border: 2px solid #f3f4f6; cursor: pointer;">
+                <span style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #d1d5db;"></span>
+                <span style="font-size: 14px; color: #374151;">宅在家里看剧/打游戏</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 8px; border: 2px solid #e9d5ff; background: #faf5ff;">
+                <span style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #7c3aed; display: flex; align-items: center; justify-content: center;">
+                  <span style="width: 10px; height: 10px; border-radius: 50%; background: #6366f1;"></span>
+                </span>
+                <span style="font-size: 14px; color: #374151;">和朋友聚会社交</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 8px; border: 2px solid #f3f4f6; cursor: pointer;">
+                <span style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #d1d5db;"></span>
+                <span style="font-size: 14px; color: #374151;">独自出去散步/运动</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 8px; border: 2px solid #f3f4f6; cursor: pointer;">
+                <span style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #d1d5db;"></span>
+                <span style="font-size: 14px; color: #374151;">学习新技能/看书</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mt-4 text-xs text-gray-400 space-y-1">
+        <p>- 选中状态变化细微</p>
+        <p>- 选项间距均匀无层次</p>
+        <p>- 无点击反馈动效</p>
+        <p>- 左边框装饰与选项争夺注意力</p>
+      </div>
+    </div>
+
+    <!-- NEW -->
+    <div>
+      <span class="badge label-new mb-3 block w-fit">优化后</span>
+      <div class="phone-frame mx-auto">
+        <div class="phone-content" style="background: linear-gradient(160deg, #eef2ff 0%, #faf5ff 50%, #f0f9ff 100%); padding: 24px 16px;">
+          <div style="background: white; border-radius: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.04); padding: 28px 24px;">
+            <!-- Question number pill -->
+            <div style="display: inline-flex; align-items: center; gap: 6px; background: #eef2ff; border-radius: 8px; padding: 4px 10px; margin-bottom: 14px;">
+              <span style="font-size: 12px; font-weight: 700; color: #6366f1;">Q1</span>
+              <span style="font-size: 11px; color: #94a3b8;">/ 7</span>
+            </div>
+
+            <h3 style="font-size: 17px; font-weight: 700; color: #0f172a; line-height: 1.5; letter-spacing: -0.2px;">
+              周末你通常怎么度过？
+            </h3>
+            <p style="font-size: 13px; color: #94a3b8; margin-top: 4px;">选择最符合你的一项</p>
+
+            <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
+              <!-- Unselected option -->
+              <div class="option-new" style="display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-radius: 14px; border: 1.5px solid #e2e8f0; cursor: pointer; background: #fafbfc;">
+                <span style="width: 22px; height: 22px; border-radius: 50%; border: 2px solid #cbd5e1; flex-shrink: 0; transition: all 0.2s;"></span>
+                <span style="font-size: 15px; color: #334155; font-weight: 500;">宅在家里看剧/打游戏</span>
+              </div>
+
+              <!-- SELECTED option -->
+              <div class="option-new selected" style="display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-radius: 14px; border: 2px solid #6366f1; cursor: pointer; background: linear-gradient(135deg, #eef2ff, #f5f3ff); box-shadow: 0 4px 12px rgba(99,102,241,0.12);">
+                <span style="width: 22px; height: 22px; border-radius: 50%; border: 2px solid #6366f1; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #6366f1;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
+                </span>
+                <span style="font-size: 15px; color: #312e81; font-weight: 600;">和朋友聚会社交</span>
+              </div>
+
+              <!-- Unselected -->
+              <div class="option-new" style="display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-radius: 14px; border: 1.5px solid #e2e8f0; cursor: pointer; background: #fafbfc;">
+                <span style="width: 22px; height: 22px; border-radius: 50%; border: 2px solid #cbd5e1; flex-shrink: 0;"></span>
+                <span style="font-size: 15px; color: #334155; font-weight: 500;">独自出去散步/运动</span>
+              </div>
+
+              <div class="option-new" style="display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-radius: 14px; border: 1.5px solid #e2e8f0; cursor: pointer; background: #fafbfc;">
+                <span style="width: 22px; height: 22px; border-radius: 50%; border: 2px solid #cbd5e1; flex-shrink: 0;"></span>
+                <span style="font-size: 15px; color: #334155; font-weight: 500;">学习新技能/看书</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mt-4 text-xs text-green-600 space-y-1">
+        <p>+ 选中态明显：背景渐变 + 投影 + 图标填充</p>
+        <p>+ 问题编号独立 pill 设计</p>
+        <p>+ 大圆角 + 微妙背景色区分状态</p>
+        <p>+ hover 上浮 + active 缩放反馈</p>
+        <p>+ 去掉左边框，卡片更整洁</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION 3: STEP VIEW ===================== -->
+<section>
+  <h2 class="section-title">3. 步进模式（Step View）底部导航</h2>
+  <p class="text-gray-500 mb-6">优化点：进度可视化增强、按钮触摸区域放大、步骤指示器更清晰</p>
+
+  <div class="comparison">
+    <!-- OLD -->
+    <div>
+      <span class="badge label-old mb-3 block w-fit">优化前</span>
+      <div style="background: white; border-radius: 16px; padding: 16px; border: 1px solid #e5e7eb; max-width: 375px; margin: 0 auto;">
+        <!-- Dots -->
+        <div style="display: flex; justify-content: center; gap: 6px; margin-bottom: 10px;">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: rgba(99,102,241,0.4);"></span>
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: rgba(99,102,241,0.4);"></span>
+          <span style="width: 24px; height: 8px; border-radius: 4px; background: #6366f1;"></span>
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #d1d5db;"></span>
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #d1d5db;"></span>
+        </div>
+        <!-- Buttons -->
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <button style="height: 44px; padding: 0 20px; border-radius: 12px; border: 2px solid #e5e7eb; color: #4b5563; font-size: 14px; background: white;">← 上一题</button>
+          <span style="font-size: 11px; color: #d1d5db;">按 Enter 继续</span>
+          <button style="height: 44px; padding: 0 28px; border-radius: 12px; border: none; background: #6366f1; color: white; font-size: 14px; font-weight: 500;">下一题 →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- NEW -->
+    <div>
+      <span class="badge label-new mb-3 block w-fit">优化后</span>
+      <div style="background: white; border-radius: 20px; padding: 0; border: 1px solid #e5e7eb; max-width: 375px; margin: 0 auto; overflow: hidden;">
+        <!-- Progress bar at top of nav -->
+        <div style="height: 3px; background: #f1f5f9;">
+          <div style="width: 43%; height: 100%; background: linear-gradient(90deg, #6366f1, #a855f7); border-radius: 0 2px 2px 0;"></div>
+        </div>
+
+        <div style="padding: 14px 20px 18px;">
+          <!-- Step indicator -->
+          <div style="display: flex; justify-content: center; align-items: center; gap: 4px; margin-bottom: 14px;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #6366f1; opacity: 0.5;"></span>
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #6366f1; opacity: 0.5;"></span>
+            <div style="display: flex; align-items: center; gap: 4px; background: #eef2ff; border-radius: 12px; padding: 3px 10px;">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: #6366f1;"></span>
+              <span style="font-size: 11px; font-weight: 700; color: #6366f1;">3/7</span>
+            </div>
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #e2e8f0;"></span>
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #e2e8f0;"></span>
+          </div>
+
+          <!-- Buttons -->
+          <div style="display: flex; gap: 12px;">
+            <button style="flex: 1; height: 50px; border-radius: 14px; border: 1.5px solid #e2e8f0; color: #64748b; font-size: 15px; font-weight: 600; background: #f8fafc; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 19l-7-7 7-7"/></svg>
+              上一题
+            </button>
+            <button style="flex: 1.5; height: 50px; border-radius: 14px; border: none; background: linear-gradient(135deg, #6366f1, #7c3aed); color: white; font-size: 15px; font-weight: 700; box-shadow: 0 4px 12px rgba(99,102,241,0.25); display: flex; align-items: center; justify-content: center; gap: 6px;">
+              下一题
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="mt-4 text-xs text-green-600 space-y-1">
+        <p>+ 顶部渐变进度条，一眼看进度</p>
+        <p>+ 步骤指示器带数字标签</p>
+        <p>+ 按钮更高(50px)更易触摸</p>
+        <p>+ "下一题"按钮更宽，引导前进</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION 4: RESULT PAGE ===================== -->
+<section>
+  <h2 class="section-title">4. 提交成功/结果页</h2>
+  <p class="text-gray-500 mb-6">优化点：情感化设计、分享引导更强、结果展示更有成就感</p>
+
+  <div class="comparison">
+    <!-- OLD -->
+    <div>
+      <span class="badge label-old mb-3 block w-fit">优化前</span>
+      <div class="phone-frame mx-auto">
+        <div class="phone-content" style="background: #f0ebf8; display: flex; align-items: center; justify-content: center; padding: 24px;">
+          <div style="background: white; border-radius: 16px; padding: 40px 24px; text-align: center; width: 100%; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+            <div style="width: 80px; height: 80px; border-radius: 50%; background: #dcfce7; margin: 0 auto 24px; display: flex; align-items: center; justify-content: center;">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <h2 style="font-size: 22px; font-weight: 700; color: #111;">提交成功！</h2>
+            <p style="color: #6b7280; margin-top: 12px; font-size: 14px;">感谢您的参与，您的回答已成功提交。</p>
+            <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #f3f4f6;">
+              <button style="width: 100%; height: 44px; border-radius: 12px; background: #6366f1; color: white; border: none; font-size: 14px;">生成分享卡片</button>
+            </div>
+            <p style="font-size: 11px; color: #d1d5db; margin-top: 12px;">您可以安全关闭此页面</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NEW -->
+    <div>
+      <span class="badge label-new mb-3 block w-fit">优化后</span>
+      <div class="phone-frame mx-auto">
+        <div class="phone-content" style="background: linear-gradient(160deg, #eef2ff 0%, #faf5ff 50%, #f0f9ff 100%); display: flex; align-items: center; justify-content: center; padding: 24px; position: relative; overflow: hidden;">
+          <!-- Decorative circles -->
+          <div style="position: absolute; top: -40px; right: -40px; width: 160px; height: 160px; border-radius: 50%; background: rgba(99,102,241,0.05);"></div>
+          <div style="position: absolute; bottom: -60px; left: -60px; width: 200px; height: 200px; border-radius: 50%; background: rgba(168,85,247,0.04);"></div>
+
+          <div style="background: white; border-radius: 24px; padding: 40px 28px; text-align: center; width: 100%; box-shadow: 0 12px 40px rgba(99,102,241,0.08); position: relative; z-index: 1;" class="anim-scale-in">
+            <!-- Animated success icon -->
+            <div style="width: 88px; height: 88px; border-radius: 50%; background: linear-gradient(135deg, #dcfce7, #d1fae5); margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(22,163,74,0.15);">
+              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg>
+            </div>
+
+            <h2 style="font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: -0.3px;">测试完成！🎉</h2>
+            <p style="color: #64748b; margin-top: 8px; font-size: 15px; line-height: 1.6;">你的性格报告已生成</p>
+
+            <!-- Score card -->
+            <div style="margin-top: 20px; background: linear-gradient(135deg, #6366f1, #7c3aed); border-radius: 16px; padding: 20px; color: white;">
+              <div style="font-size: 36px; font-weight: 800;">78分</div>
+              <div style="font-size: 14px; opacity: 0.85; margin-top: 4px;">社交蝴蝶型</div>
+              <div style="margin-top: 12px; background: rgba(255,255,255,0.2); border-radius: 8px; height: 6px;">
+                <div style="width: 78%; height: 100%; background: white; border-radius: 8px;"></div>
+              </div>
+            </div>
+
+            <!-- Share actions -->
+            <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 10px;">
+              <button style="width: 100%; height: 50px; border-radius: 14px; background: #0f172a; color: white; border: none; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+                分享给好友
+              </button>
+              <button style="width: 100%; height: 44px; border-radius: 14px; background: transparent; color: #6366f1; border: 1.5px solid #e0e7ff; font-size: 14px; font-weight: 600;">
+                生成分享卡片
+              </button>
+            </div>
+
+            <!-- Branding -->
+            <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #f1f5f9;">
+              <p style="font-size: 11px; color: #94a3b8;">也想做一个测试？</p>
+              <a style="font-size: 12px; color: #6366f1; font-weight: 600; text-decoration: none;">免费创建 →</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mt-4 text-xs text-green-600 space-y-1">
+        <p>+ 分数展示用渐变卡片突出</p>
+        <p>+ 分享按钮层级明确（主次）</p>
+        <p>+ 装饰性背景元素增加空间感</p>
+        <p>+ 引导创建测试的转化入口</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION 5: ADMIN LIST ===================== -->
+<section>
+  <h2 class="section-title">5. 后台 - 问卷列表</h2>
+  <p class="text-gray-500 mb-6">优化点：卡片信息密度、状态可视化、操作按钮可发现性</p>
+
+  <div class="comparison">
+    <!-- OLD -->
+    <div>
+      <span class="badge label-old mb-3 block w-fit">优化前</span>
+      <div style="background: #f9fafb; border-radius: 16px; padding: 20px; max-width: 420px;">
+        <!-- Card -->
+        <div style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); border: 1px solid #f3f4f6; margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: #dcfce7; color: #166534;">收集中</span>
+            <span style="font-size: 11px; color: #9ca3af;">3天前</span>
+          </div>
+          <h3 style="font-size: 15px; font-weight: 600; color: #111;">你是什么性格类型？</h3>
+          <p style="font-size: 12px; color: #9ca3af; margin-top: 4px;">7 题 · 12 条回复</p>
+          <div style="display: flex; gap: 8px; margin-top: 16px;">
+            <button style="flex: 1; height: 36px; border-radius: 8px; border: 1px solid #e5e7eb; font-size: 12px; color: #6b7280; background: white;">编辑</button>
+            <button style="flex: 1; height: 36px; border-radius: 8px; border: none; font-size: 12px; color: white; background: #6366f1;">分享</button>
+          </div>
+        </div>
+        <div style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); border: 1px solid #f3f4f6;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: #fef9c3; color: #854d0e;">草稿</span>
+            <span style="font-size: 11px; color: #9ca3af;">1周前</span>
+          </div>
+          <h3 style="font-size: 15px; font-weight: 600; color: #111;">团建意见收集</h3>
+          <p style="font-size: 12px; color: #9ca3af; margin-top: 4px;">5 题 · 0 条回复</p>
+          <div style="display: flex; gap: 8px; margin-top: 16px;">
+            <button style="flex: 1; height: 36px; border-radius: 8px; border: 1px solid #e5e7eb; font-size: 12px; color: #6b7280; background: white;">编辑</button>
+            <button style="flex: 1; height: 36px; border-radius: 8px; border: none; font-size: 12px; color: white; background: #6366f1;">分享</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NEW -->
+    <div>
+      <span class="badge label-new mb-3 block w-fit">优化后</span>
+      <div style="background: #f8fafc; border-radius: 20px; padding: 20px; max-width: 420px;">
+        <!-- Card NEW -->
+        <div style="background: white; border-radius: 18px; padding: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f1f5f9; margin-bottom: 14px; overflow: hidden;">
+          <!-- Color accent top -->
+          <div style="height: 3px; background: linear-gradient(90deg, #22c55e, #16a34a);"></div>
+          <div style="padding: 20px 22px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div style="flex: 1;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                  <span style="font-size: 10px; padding: 3px 8px; border-radius: 6px; background: #f0fdf4; color: #16a34a; font-weight: 600; letter-spacing: 0.3px;">● 收集中</span>
+                </div>
+                <h3 style="font-size: 16px; font-weight: 700; color: #0f172a; line-height: 1.4;">你是什么性格类型？</h3>
+              </div>
+              <!-- Quick actions -->
+              <div style="display: flex; gap: 4px;">
+                <button style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; background: white; cursor: pointer;" title="分享">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+                </button>
+                <button style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; background: white; cursor: pointer;" title="更多">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Stats row -->
+            <div style="display: flex; gap: 16px; margin-top: 14px; padding-top: 14px; border-top: 1px solid #f8fafc;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <div style="width: 28px; height: 28px; border-radius: 7px; background: #f1f5f9; display: flex; align-items: center; justify-content: center;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>
+                </div>
+                <span style="font-size: 12px; color: #64748b;">7题</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <div style="width: 28px; height: 28px; border-radius: 7px; background: #f0fdf4; display: flex; align-items: center; justify-content: center;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                </div>
+                <span style="font-size: 12px; color: #16a34a; font-weight: 600;">12 回复</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <div style="width: 28px; height: 28px; border-radius: 7px; background: #f1f5f9; display: flex; align-items: center; justify-content: center;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                </div>
+                <span style="font-size: 12px; color: #94a3b8;">3天前</span>
+              </div>
+            </div>
+
+            <!-- Main action -->
+            <button style="width: 100%; height: 42px; margin-top: 14px; border-radius: 10px; border: none; background: #0f172a; color: white; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              编辑问卷
+            </button>
+          </div>
+        </div>
+
+        <!-- Card 2 - Draft -->
+        <div style="background: white; border-radius: 18px; padding: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f1f5f9; overflow: hidden;">
+          <div style="height: 3px; background: linear-gradient(90deg, #f59e0b, #eab308);"></div>
+          <div style="padding: 20px 22px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <span style="font-size: 10px; padding: 3px 8px; border-radius: 6px; background: #fffbeb; color: #b45309; font-weight: 600;">◌ 草稿</span>
+                <h3 style="font-size: 16px; font-weight: 700; color: #0f172a; margin-top: 8px;">团建意见收集</h3>
+              </div>
+              <div style="display: flex; gap: 4px;">
+                <button style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; background: white;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                </button>
+              </div>
+            </div>
+            <div style="display: flex; gap: 16px; margin-top: 14px; padding-top: 14px; border-top: 1px solid #f8fafc;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <div style="width: 28px; height: 28px; border-radius: 7px; background: #f1f5f9; display: flex; align-items: center; justify-content: center;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>
+                </div>
+                <span style="font-size: 12px; color: #64748b;">5题</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 12px; color: #94a3b8;">1周前创建</span>
+              </div>
+            </div>
+            <button style="width: 100%; height: 42px; margin-top: 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; background: white; color: #475569; font-size: 13px; font-weight: 600; cursor: pointer;">
+              继续编辑
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="mt-4 text-xs text-green-600 space-y-1">
+        <p>+ 顶部色条映射状态颜色</p>
+        <p>+ 数据指标用图标+数字卡片展示</p>
+        <p>+ 操作按钮右上角图标化，不喧宾夺主</p>
+        <p>+ 主操作按钮明确（编辑=核心动作）</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION 6: EDITOR TOOLBAR ===================== -->
+<section>
+  <h2 class="section-title">6. 后台 - 编辑器顶栏</h2>
+  <p class="text-gray-500 mb-6">优化点：工具栏紧凑化、状态信息直觉化、保存反馈增强</p>
+
+  <div class="comparison">
+    <!-- OLD -->
+    <div>
+      <span class="badge label-old mb-3 block w-fit">优化前</span>
+      <div style="background: white; border-radius: 12px; border: 1px solid #e5e7eb; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; max-width: 100%;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <button style="padding: 6px 12px; border-radius: 6px; border: 1px solid #e5e7eb; font-size: 12px; color: #6b7280;">← 返回</button>
+          <span style="font-size: 14px; font-weight: 600; color: #111;">你是什么性格类型？</span>
+          <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #dcfce7; color: #166534;">收集中</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 11px; color: #9ca3af;">已保存 14:30</span>
+          <button style="padding: 6px 16px; border-radius: 8px; border: none; background: #6366f1; color: white; font-size: 12px;">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- NEW -->
+    <div>
+      <span class="badge label-new mb-3 block w-fit">优化后</span>
+      <div style="background: white; border-radius: 16px; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; max-width: 100%;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <button style="width: 36px; height: 36px; border-radius: 10px; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; background: white; cursor: pointer;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2"><path d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 14px; font-weight: 700; color: #0f172a;">你是什么性格类型？</span>
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,0.2);"></span>
+            </div>
+            <span style="font-size: 11px; color: #94a3b8;">自动保存于 14:30</span>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <!-- Undo/Redo -->
+          <div style="display: flex; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+            <button style="width: 32px; height: 32px; border: none; background: white; display: flex; align-items: center; justify-content: center; cursor: pointer; border-right: 1px solid #e2e8f0;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M3 10h10a5 5 0 015 5v2M3 10l4-4M3 10l4 4"/></svg>
+            </button>
+            <button style="width: 32px; height: 32px; border: none; background: white; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2"><path d="M21 10H11a5 5 0 00-5 5v2M21 10l-4-4M21 10l-4 4"/></svg>
+            </button>
+          </div>
+          <!-- Preview -->
+          <button style="height: 36px; padding: 0 14px; border-radius: 9px; border: 1px solid #e2e8f0; font-size: 12px; color: #475569; font-weight: 600; background: white; display: flex; align-items: center; gap: 5px; cursor: pointer;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            预览
+          </button>
+          <!-- Publish -->
+          <button style="height: 36px; padding: 0 16px; border-radius: 9px; border: none; background: linear-gradient(135deg, #6366f1, #7c3aed); color: white; font-size: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 2px 8px rgba(99,102,241,0.25); display: flex; align-items: center; gap: 5px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+            发布
+          </button>
+        </div>
+      </div>
+      <div class="mt-4 text-xs text-green-600 space-y-1">
+        <p>+ 状态用绿色呼吸圆点替代文字 badge</p>
+        <p>+ "自动保存"小字标注安心感</p>
+        <p>+ 撤销/重做组合按钮</p>
+        <p>+ 发布按钮渐变突出</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== DESIGN SYSTEM SUMMARY ===================== -->
+<section style="border-bottom: none;">
+  <h2 class="section-title">设计系统总结</h2>
+  <p class="text-gray-500 mb-6">核心视觉升级变量</p>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <!-- Colors -->
+    <div class="bg-white rounded-2xl p-6 border border-gray-100">
+      <h3 class="font-bold text-sm mb-4 text-gray-700">配色升级</h3>
+      <div class="space-y-3">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg" style="background: linear-gradient(135deg, #6366f1, #7c3aed);"></div>
+          <div>
+            <p class="text-xs font-semibold">主色渐变</p>
+            <p class="text-[10px] text-gray-400">indigo → violet</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-[#f8fafc] border border-gray-100"></div>
+          <div>
+            <p class="text-xs font-semibold">背景色</p>
+            <p class="text-[10px] text-gray-400">#f8fafc（更冷更干净）</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-[#0f172a]"></div>
+          <div>
+            <p class="text-xs font-semibold">文字主色</p>
+            <p class="text-[10px] text-gray-400">slate-900（对比度更高）</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Spacing & Radius -->
+    <div class="bg-white rounded-2xl p-6 border border-gray-100">
+      <h3 class="font-bold text-sm mb-4 text-gray-700">圆角 & 间距</h3>
+      <div class="space-y-3 text-xs">
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500">卡片圆角</span>
+          <span class="font-mono font-bold">12px → <span class="text-green-600">20px</span></span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500">按钮圆角</span>
+          <span class="font-mono font-bold">8px → <span class="text-green-600">14px</span></span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500">选项高度</span>
+          <span class="font-mono font-bold">44px → <span class="text-green-600">52px</span></span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500">选项间距</span>
+          <span class="font-mono font-bold">8px → <span class="text-green-600">10px</span></span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500">卡片内距</span>
+          <span class="font-mono font-bold">24px → <span class="text-green-600">28px</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Motion -->
+    <div class="bg-white rounded-2xl p-6 border border-gray-100">
+      <h3 class="font-bold text-sm mb-4 text-gray-700">动效 & 交互</h3>
+      <div class="space-y-3 text-xs">
+        <div class="flex items-start gap-2">
+          <span class="text-green-500 mt-0.5">●</span>
+          <span class="text-gray-600">选项 hover: translateY(-1px) + shadow</span>
+        </div>
+        <div class="flex items-start gap-2">
+          <span class="text-green-500 mt-0.5">●</span>
+          <span class="text-gray-600">选项 active: scale(0.98)</span>
+        </div>
+        <div class="flex items-start gap-2">
+          <span class="text-green-500 mt-0.5">●</span>
+          <span class="text-gray-600">选中态: pulse-ring 呼吸投影</span>
+        </div>
+        <div class="flex items-start gap-2">
+          <span class="text-green-500 mt-0.5">●</span>
+          <span class="text-gray-600">卡片进入: slideUp 0.4s ease-out</span>
+        </div>
+        <div class="flex items-start gap-2">
+          <span class="text-green-500 mt-0.5">●</span>
+          <span class="text-gray-600">按钮渐变 + 12px投影</span>
+        </div>
+        <div class="flex items-start gap-2">
+          <span class="text-green-500 mt-0.5">●</span>
+          <span class="text-gray-600">进度条: 渐变 indigo→violet</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Implementation notes -->
+  <div class="mt-8 bg-indigo-50 rounded-2xl p-6 border border-indigo-100">
+    <h3 class="font-bold text-sm text-indigo-800 mb-3">实施要点</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-indigo-700">
+      <div>
+        <p class="font-semibold mb-1">答题端（高优先）</p>
+        <ul class="space-y-1 list-disc list-inside">
+          <li>Landing page 重设计（情感化+社交证明）</li>
+          <li>Radio/Checkbox 选项：hover/active/selected 三态</li>
+          <li>Step 底部导航升级</li>
+          <li>结果页渐变分数卡片</li>
+          <li>全局：背景渐变、卡片大圆角</li>
+        </ul>
+      </div>
+      <div>
+        <p class="font-semibold mb-1">管理端</p>
+        <ul class="space-y-1 list-disc list-inside">
+          <li>列表卡片：色条+图标数据行</li>
+          <li>编辑器顶栏：紧凑化+状态圆点</li>
+          <li>按钮系统：渐变主按钮+outline副按钮</li>
+          <li>空状态/Loading 骨架屏优化</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<style>
+@keyframes bounce {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(3px); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+</style>
+
+</body>
+</html>

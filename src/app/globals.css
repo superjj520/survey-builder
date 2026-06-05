@@ -459,3 +459,98 @@
 .animate-gameCardIn {
   animation: gameCardIn 0.3s ease-out;
 }
+
+/* Bouncing dots typing indicator */
+@keyframes typingDot {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-4px); }
+}
+
+.animate-typingDot {
+  animation: typingDot 1.4s ease-in-out infinite;
+}
+
+/* Selection bounce */
+@keyframes selectBounce {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.animate-selectBounce {
+  animation: selectBounce 0.3s ease-out;
+}
+
+/* Float up for FAB */
+@keyframes floatUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.8); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-floatUp {
+  animation: floatUp 0.3s ease-out;
+}
+
+/* Scroll progress bar */
+@keyframes progressGlow {
+  0%, 100% { box-shadow: 0 0 4px var(--progress-color, #6366f1); }
+  50% { box-shadow: 0 0 8px var(--progress-color, #6366f1); }
+}
+
+/* Active question left accent */
+@keyframes accentPulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+.animate-accentPulse {
+  animation: accentPulse 2s ease-in-out infinite;
+}
+
+/* Swipe exit animations */
+@keyframes slideOutLeft {
+  to { opacity: 0; transform: translateX(-30px); }
+}
+
+@keyframes slideOutRight {
+  to { opacity: 0; transform: translateX(30px); }
+}
+
+.animate-slideOutLeft {
+  animation: slideOutLeft 0.2s ease-in forwards;
+}
+
+.animate-slideOutRight {
+  animation: slideOutRight 0.2s ease-in forwards;
+}
+
+/* Landing page animations */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-gradientShift {
+  background-size: 200% 200%;
+  animation: gradientShift 8s ease infinite;
+}
+
+@keyframes floatSlow {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(30px, -40px); }
+}
+
+@keyframes floatMedium {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-20px, 30px); }
+}
+
+@keyframes floatFast {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(20px, -20px); }
+}
+
+.animate-floatSlow { animation: floatSlow 12s ease-in-out infinite; }
+.animate-floatMedium { animation: floatMedium 8s ease-in-out infinite; }
+.animate-floatFast { animation: floatFast 6s ease-in-out infinite; }

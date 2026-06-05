@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { ImagePicker } from './Gallery'
 import { SurveySettings, SurveyField } from '@/lib/types'
 import { ChatPreviewModal } from './ChatPreviewModal'
+import { MessageCircle, ChevronDown, ChevronRight, Play, X, SlidersHorizontal, Volume2, Palette, Drama, FileQuestion, Sparkles, Clapperboard, Link2, PenLine, Smile, MapPin, Gamepad2, BookOpen, Zap, Heart, Star, Puzzle, Vote, Mail } from 'lucide-react'
 
   const ROLE_TEMPLATES = [
     {
@@ -143,9 +144,7 @@ export function ChatSettingsSection() {
   return (
         <section className="bg-white rounded-xl p-6 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <svg className="w-4 h-4 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
+            <MessageCircle className="w-4 h-4 text-pink-500" />
             AI 场景对话设定
           </h3>
           <div className="p-4 bg-indigo-50/50 rounded-xl space-y-4 border border-indigo-100">
@@ -156,29 +155,27 @@ export function ChatSettingsSection() {
                   onClick={() => setShowFeatureInfo(!showFeatureInfo)}
                   className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-indigo-50/50 transition-colors"
                 >
-                  <span className="text-xs font-medium text-indigo-600 flex items-center gap-1.5">🎛️ 互动模块开关</span>
-                  <svg className={`w-3.5 h-3.5 text-indigo-400 transition-transform ${showFeatureInfo ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+                  <span className="text-xs font-medium text-indigo-600 flex items-center gap-1.5"><SlidersHorizontal className="w-3 h-3" /> 互动模块开关</span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-indigo-400 transition-transform ${showFeatureInfo ? 'rotate-180' : ''}`} />
                 </button>
                 {showFeatureInfo && (
                   <div className="px-3 pb-3 space-y-2 border-t border-indigo-50 pt-2">
                     {([
-                      { key: 'mood', emoji: '😊', label: '情绪系统', desc: 'AI 表达情绪状态' },
-                      { key: 'scene', emoji: '📍', label: '场景切换', desc: '背景随剧情变化' },
-                      { key: 'suggest', emoji: '💬', label: '快捷回复', desc: '自动生成推荐选项' },
-                      { key: 'game', emoji: '🎮', label: '小游戏', desc: '真心话/猜谜/投票' },
-                      { key: 'event', emoji: '📖', label: '剧情事件', desc: '突发事件卡片' },
-                      { key: 'choice', emoji: '⚡', label: '选择卡', desc: '有后果的关键选择' },
-                      { key: 'bond', emoji: '💕', label: '亲密度', desc: '关系成长系统' },
-                      { key: 'milestone', emoji: '⭐', label: '里程碑', desc: '成就解锁' },
-                    ] as const).map(({ key, emoji, label, desc }) => {
+                      { key: 'mood', icon: <Smile className="w-3.5 h-3.5 text-amber-500" />, label: '情绪系统', desc: 'AI 表达情绪状态' },
+                      { key: 'scene', icon: <MapPin className="w-3.5 h-3.5 text-blue-500" />, label: '场景切换', desc: '背景随剧情变化' },
+                      { key: 'suggest', icon: <MessageCircle className="w-3.5 h-3.5 text-green-500" />, label: '快捷回复', desc: '自动生成推荐选项' },
+                      { key: 'game', icon: <Gamepad2 className="w-3.5 h-3.5 text-purple-500" />, label: '小游戏', desc: '真心话/猜谜/投票' },
+                      { key: 'event', icon: <BookOpen className="w-3.5 h-3.5 text-indigo-500" />, label: '剧情事件', desc: '突发事件卡片' },
+                      { key: 'choice', icon: <Zap className="w-3.5 h-3.5 text-yellow-500" />, label: '选择卡', desc: '有后果的关键选择' },
+                      { key: 'bond', icon: <Heart className="w-3.5 h-3.5 text-pink-500" />, label: '亲密度', desc: '关系成长系统' },
+                      { key: 'milestone', icon: <Star className="w-3.5 h-3.5 text-amber-500" />, label: '里程碑', desc: '成就解锁' },
+                    ] as const).map(({ key, icon, label, desc }) => {
                       const features = settings.chatFeatures || {}
                       const enabled = features[key] !== false // default true
                       return (
                         <label key={key} className="flex items-center justify-between py-1 cursor-pointer group">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm">{emoji}</span>
+                            <span className="text-sm">{icon}</span>
                             <div>
                               <span className="text-xs font-medium text-gray-700">{label}</span>
                               <span className="text-[10px] text-gray-400 ml-1.5">{desc}</span>
@@ -378,9 +375,7 @@ export function ChatSettingsSection() {
                   onClick={() => setShowAdvanced(!showAdvanced)}
                   className="flex items-center gap-1.5 text-xs text-indigo-500 font-medium hover:text-indigo-700 transition-colors"
                 >
-                  <svg className={`w-3 h-3 transition-transform ${showAdvanced ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+                  <ChevronRight className={`w-3 h-3 transition-transform ${showAdvanced ? 'rotate-90' : ''}`} />
                   高级设置
                 </button>
                 {showAdvanced && (
@@ -463,14 +458,14 @@ export function ChatSettingsSection() {
                         <p className="text-[10px] text-gray-400 mb-2">亲密度达到指定值才会触发该游戏</p>
                         <div className="space-y-1.5">
                           {([
-                            { key: 'truth_or_dare', label: '🎭 真心话大冒险' },
-                            { key: 'guess', label: '🧩 猜谜' },
-                            { key: 'vote', label: '🗳️ 投票' },
-                            { key: 'word_chain', label: '🔗 词语接龙' },
-                            { key: 'quiz', label: '📝 知识问答' },
-                            { key: 'fortune', label: '🔮 运势抽牌' },
-                            { key: 'roleplay', label: '🎬 即兴表演' },
-                            { key: 'confession', label: '💌 心里话' },
+                            { key: 'truth_or_dare', label: '真心话大冒险' },
+                            { key: 'guess', label: '猜谜' },
+                            { key: 'vote', label: '投票' },
+                            { key: 'word_chain', label: '词语接龙' },
+                            { key: 'quiz', label: '知识问答' },
+                            { key: 'fortune', label: '运势抽牌' },
+                            { key: 'roleplay', label: '即兴表演' },
+                            { key: 'confession', label: '心里话' },
                           ] as const).filter(({ key }) => (settings.chatGameTypes || ['truth_or_dare', 'guess', 'vote']).includes(key)).map(({ key, label }) => {
                             const unlock = settings.chatGameUnlock || {}
                             return (
@@ -527,7 +522,7 @@ export function ChatSettingsSection() {
                               <button type="button" onClick={() => {
                                 const list = (settings.chatMilestoneThresholds || []).filter((_, idx) => idx !== i)
                                 updateSettings({ chatMilestoneThresholds: list })
-                              }} className="text-gray-300 hover:text-red-400 text-xs">✕</button>
+                              }} className="text-gray-300 hover:text-red-400 text-xs"><X className="w-3 h-3" /></button>
                             </div>
                           ))}
                           <button type="button" onClick={() => {
@@ -600,7 +595,7 @@ export function ChatSettingsSection() {
                                     updateSettings({ chatMoodList: list })
                                   }}
                                   className="text-gray-300 hover:text-red-400 text-xs"
-                                >✕</button>
+                                ><X className="w-3 h-3" /></button>
                               </div>
                             ))}
                             <button
@@ -626,14 +621,14 @@ export function ChatSettingsSection() {
                           <Label className="text-xs text-gray-600">小游戏类型</Label>
                           <div className="flex flex-wrap gap-2 mt-1">
                             {([
-                              { key: 'truth_or_dare', label: '🎭 真心话大冒险' },
-                              { key: 'guess', label: '🧩 猜谜' },
-                              { key: 'vote', label: '🗳️ 投票' },
-                              { key: 'word_chain', label: '🔗 词语接龙' },
-                              { key: 'quiz', label: '📝 知识问答' },
-                              { key: 'fortune', label: '🔮 运势抽牌' },
-                              { key: 'roleplay', label: '🎬 即兴表演' },
-                              { key: 'confession', label: '💌 心里话' },
+                              { key: 'truth_or_dare', label: '真心话大冒险' },
+                              { key: 'guess', label: '猜谜' },
+                              { key: 'vote', label: '投票' },
+                              { key: 'word_chain', label: '词语接龙' },
+                              { key: 'quiz', label: '知识问答' },
+                              { key: 'fortune', label: '运势抽牌' },
+                              { key: 'roleplay', label: '即兴表演' },
+                              { key: 'confession', label: '心里话' },
                             ] as const).map(({ key, label }) => {
                               const types = settings.chatGameTypes || ['truth_or_dare', 'guess', 'vote']
                               const active = types.includes(key)
@@ -656,7 +651,7 @@ export function ChatSettingsSection() {
                           {/* Game content customization */}
                           {(settings.chatGameTypes || ['truth_or_dare', 'guess', 'vote']).includes('truth_or_dare') && (
                             <div className="mt-3 p-3 bg-white/60 rounded-lg border border-gray-100">
-                              <p className="text-[10px] font-medium text-gray-600 mb-2">🎭 真心话大冒险题库</p>
+                              <p className="text-[10px] font-medium text-gray-600 mb-2 flex items-center gap-1"><Drama className="w-3 h-3" /> 真心话大冒险题库</p>
                               <div className="space-y-2">
                                 <div>
                                   <p className="text-[10px] text-gray-400 mb-1">真心话题目</p>
@@ -672,7 +667,7 @@ export function ChatSettingsSection() {
                                         const cfg = { ...settings.chatGameConfig }
                                         const td = { truths: (cfg?.truth_or_dare?.truths || []).filter((_, idx) => idx !== i), dares: [...(cfg?.truth_or_dare?.dares || [])] }
                                         updateSettings({ chatGameConfig: { ...cfg, truth_or_dare: td } })
-                                      }} className="text-gray-300 hover:text-red-400 text-[10px]">✕</button>
+                                      }} className="text-gray-300 hover:text-red-400 text-[10px]"><X className="w-3 h-3" /></button>
                                     </div>
                                   ))}
                                   <button type="button" onClick={() => {
@@ -695,7 +690,7 @@ export function ChatSettingsSection() {
                                         const cfg = { ...settings.chatGameConfig }
                                         const td = { truths: [...(cfg?.truth_or_dare?.truths || [])], dares: (cfg?.truth_or_dare?.dares || []).filter((_, idx) => idx !== i) }
                                         updateSettings({ chatGameConfig: { ...cfg, truth_or_dare: td } })
-                                      }} className="text-gray-300 hover:text-red-400 text-[10px]">✕</button>
+                                      }} className="text-gray-300 hover:text-red-400 text-[10px]"><X className="w-3 h-3" /></button>
                                     </div>
                                   ))}
                                   <button type="button" onClick={() => {
@@ -710,7 +705,7 @@ export function ChatSettingsSection() {
 
                           {(settings.chatGameTypes || []).includes('quiz') && (
                             <div className="mt-3 p-3 bg-white/60 rounded-lg border border-gray-100">
-                              <p className="text-[10px] font-medium text-gray-600 mb-2">📝 知识问答题库</p>
+                              <p className="text-[10px] font-medium text-gray-600 mb-2 flex items-center gap-1"><FileQuestion className="w-3 h-3" /> 知识问答题库</p>
                               {(settings.chatGameConfig?.quiz?.questions || []).map((q, i) => (
                                 <div key={i} className="mb-2 p-2 bg-gray-50 rounded-lg">
                                   <div className="flex items-center gap-1.5 mb-1">
@@ -724,7 +719,7 @@ export function ChatSettingsSection() {
                                       const cfg = { ...settings.chatGameConfig }
                                       const questions = (cfg?.quiz?.questions || []).filter((_, idx) => idx !== i)
                                       updateSettings({ chatGameConfig: { ...cfg, quiz: { questions } } })
-                                    }} className="text-gray-300 hover:text-red-400 text-[10px]">✕</button>
+                                    }} className="text-gray-300 hover:text-red-400 text-[10px]"><X className="w-3 h-3" /></button>
                                   </div>
                                   <div className="flex gap-1 flex-wrap">
                                     {(q.options || []).map((opt, oi) => (
@@ -751,7 +746,7 @@ export function ChatSettingsSection() {
 
                           {(settings.chatGameTypes || []).includes('fortune') && (
                             <div className="mt-3 p-3 bg-white/60 rounded-lg border border-gray-100">
-                              <p className="text-[10px] font-medium text-gray-600 mb-2">🔮 运势卡牌库</p>
+                              <p className="text-[10px] font-medium text-gray-600 mb-2 flex items-center gap-1"><Sparkles className="w-3 h-3" /> 运势卡牌库</p>
                               {(settings.chatGameConfig?.fortune?.cards || []).map((card, i) => (
                                 <div key={i} className="flex items-center gap-1.5 mb-1">
                                   <input value={card.name} onChange={(e) => {
@@ -770,7 +765,7 @@ export function ChatSettingsSection() {
                                     const cfg = { ...settings.chatGameConfig }
                                     const cards = (cfg?.fortune?.cards || []).filter((_, idx) => idx !== i)
                                     updateSettings({ chatGameConfig: { ...cfg, fortune: { cards } } })
-                                  }} className="text-gray-300 hover:text-red-400 text-[10px]">✕</button>
+                                  }} className="text-gray-300 hover:text-red-400 text-[10px]"><X className="w-3 h-3" /></button>
                                 </div>
                               ))}
                               <button type="button" onClick={() => {
@@ -783,7 +778,7 @@ export function ChatSettingsSection() {
 
                           {(settings.chatGameTypes || []).includes('roleplay') && (
                             <div className="mt-3 p-3 bg-white/60 rounded-lg border border-gray-100">
-                              <p className="text-[10px] font-medium text-gray-600 mb-2">🎬 即兴表演情境库</p>
+                              <p className="text-[10px] font-medium text-gray-600 mb-2 flex items-center gap-1"><Clapperboard className="w-3 h-3" /> 即兴表演情境库</p>
                               {(settings.chatGameConfig?.roleplay?.scenarios || []).map((s, i) => (
                                 <div key={i} className="flex items-center gap-1.5 mb-1">
                                   <input value={s} onChange={(e) => {
@@ -796,7 +791,7 @@ export function ChatSettingsSection() {
                                     const cfg = { ...settings.chatGameConfig }
                                     const scenarios = (cfg?.roleplay?.scenarios || []).filter((_, idx) => idx !== i)
                                     updateSettings({ chatGameConfig: { ...cfg, roleplay: { scenarios } } })
-                                  }} className="text-gray-300 hover:text-red-400 text-[10px]">✕</button>
+                                  }} className="text-gray-300 hover:text-red-400 text-[10px]"><X className="w-3 h-3" /></button>
                                 </div>
                               ))}
                               <button type="button" onClick={() => {
@@ -809,7 +804,7 @@ export function ChatSettingsSection() {
 
                           {(settings.chatGameTypes || []).includes('word_chain') && (
                             <div className="mt-3 p-3 bg-white/60 rounded-lg border border-gray-100">
-                              <p className="text-[10px] font-medium text-gray-600 mb-2">🔗 词语接龙设置</p>
+                              <p className="text-[10px] font-medium text-gray-600 mb-2 flex items-center gap-1"><Link2 className="w-3 h-3" /> 词语接龙设置</p>
                               <div className="mb-2">
                                 <input
                                   value={settings.chatGameConfig?.word_chain?.theme || ''}
@@ -836,7 +831,7 @@ export function ChatSettingsSection() {
                                       const cfg = { ...settings.chatGameConfig }
                                       const startWords = (cfg?.word_chain?.startWords || []).filter((_, idx) => idx !== i)
                                       updateSettings({ chatGameConfig: { ...cfg, word_chain: { ...cfg?.word_chain, startWords } } })
-                                    }} className="text-gray-300 hover:text-red-400 text-[10px]">✕</button>
+                                    }} className="text-gray-300 hover:text-red-400 text-[10px]"><X className="w-3 h-3" /></button>
                                   </div>
                                 ))}
                                 <button type="button" onClick={() => {
@@ -910,7 +905,7 @@ export function ChatSettingsSection() {
                                     updateSettings({ chatMilestoneList: list })
                                   }}
                                   className="text-gray-300 hover:text-red-400 text-xs"
-                                >✕</button>
+                                ><X className="w-3 h-3" /></button>
                               </div>
                             ))}
                             <button
@@ -950,7 +945,7 @@ export function ChatSettingsSection() {
                                     updateSettings({ chatEventHints: list })
                                   }}
                                   className="text-gray-300 hover:text-red-400 text-xs"
-                                >✕</button>
+                                ><X className="w-3 h-3" /></button>
                               </div>
                             ))}
                             <button
@@ -978,7 +973,7 @@ export function ChatSettingsSection() {
                               onChange={(e) => updateSettings({ chatTtsEnabled: e.target.checked })}
                               className="w-3.5 h-3.5 accent-indigo-500 rounded"
                             />
-                            <span className="text-xs text-gray-700">🔊 语音回复</span>
+                            <span className="text-xs text-gray-700 flex items-center gap-1"><Volume2 className="w-3 h-3" /> 语音回复</span>
                             <span className="text-[10px] text-gray-400">AI 消息自动朗读</span>
                           </label>
                           {settings.chatTtsEnabled && (
@@ -1118,7 +1113,7 @@ export function ChatSettingsSection() {
 
                         {/* Sticker packs */}
                         <div className="mb-3">
-                          <Label className="text-xs text-gray-600">🎨 贴纸库</Label>
+                          <Label className="text-xs text-gray-600 flex items-center gap-1"><Palette className="w-3 h-3" /> 贴纸库</Label>
                           <p className="text-[10px] text-gray-400 mb-1">AI 可在情绪高涨时发送贴纸</p>
                           <div className="space-y-2 mt-1">
                             {(settings.chatStickerPacks || []).map((sticker, i) => (
@@ -1141,7 +1136,7 @@ export function ChatSettingsSection() {
                                       updateSettings({ chatStickerPacks: list })
                                     }}
                                     className="text-gray-300 hover:text-red-400 text-xs"
-                                  >✕</button>
+                                  ><X className="w-3 h-3" /></button>
                                 </div>
                                 <ImagePicker
                                   value={sticker.url}
@@ -1176,10 +1171,7 @@ export function ChatSettingsSection() {
                 onClick={() => setShowPreview(true)}
                 className="w-full mt-2 py-2.5 rounded-lg border-2 border-dashed border-indigo-300 text-indigo-600 text-sm font-medium hover:bg-indigo-50 hover:border-indigo-400 transition-all flex items-center justify-center gap-2"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <Play className="w-4 h-4" />
                 预览对话效果
               </button>
 

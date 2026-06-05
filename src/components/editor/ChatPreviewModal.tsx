@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { ThemeSettings } from '@/lib/types'
+import { X, BookOpen, Volume2, RefreshCw, MessageSquare, Target } from 'lucide-react'
 
 interface ChatPreviewModalProps {
   open: boolean
@@ -579,7 +580,7 @@ export function ChatPreviewModal({ open, onClose, config }: ChatPreviewModalProp
       {showEvent && (
         <div className="absolute inset-0 z-[60] bg-black/60 flex items-center justify-center p-6">
           <div className="animate-eventCardIn max-w-sm w-full bg-white/95 backdrop-blur-md rounded-2xl p-6 text-center shadow-2xl">
-            <div className="text-2xl mb-3">📖</div>
+            <div className="mb-3 flex justify-center"><BookOpen className="w-6 h-6 text-indigo-500" /></div>
             <p className="text-gray-800 text-sm leading-relaxed">{showEvent}</p>
           </div>
         </div>
@@ -633,7 +634,7 @@ export function ChatPreviewModal({ open, onClose, config }: ChatPreviewModalProp
           {/* Preview badge */}
           <span className="text-[10px] px-2 py-1 bg-purple-100 text-purple-600 rounded-full font-medium">预览</span>
           <button onClick={onClose} className={`w-8 h-8 rounded-full flex items-center justify-center ${isDark ? 'text-white hover:bg-white/10' : 'text-gray-500 hover:bg-gray-100'}`}>
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            <X className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -674,7 +675,7 @@ export function ChatPreviewModal({ open, onClose, config }: ChatPreviewModalProp
                   renderContent(msg.content, isDark)
                 ) : null}
                 {config.ttsEnabled && msg.role === 'assistant' && msg.content && !msg.isRetracted && (
-                  <span className="inline-flex items-center mt-1 text-[10px] opacity-50 text-gray-400">🔊</span>
+                  <span className="inline-flex items-center mt-1 text-[10px] opacity-50 text-gray-400"><Volume2 className="w-2.5 h-2.5" /></span>
                 )}
               </div>
             </div>
@@ -703,7 +704,7 @@ export function ChatPreviewModal({ open, onClose, config }: ChatPreviewModalProp
                         {last.game.data.map((opt, i) => (
                           <div key={i} className="flex-1 py-4 rounded-xl text-center pointer-events-none opacity-80"
                             style={{ backgroundColor: i === 0 ? '#ede9fe' : '#fce7f3', color: i === 0 ? '#7c3aed' : '#db2777' }}>
-                            <div className="text-2xl mb-1">{i === 0 ? '💭' : '🎯'}</div>
+                            <div className="flex justify-center mb-1">{i === 0 ? <MessageSquare className="w-6 h-6" /> : <Target className="w-6 h-6" />}</div>
                             <div className="text-sm font-medium">{opt}</div>
                           </div>
                         ))}
@@ -762,7 +763,7 @@ export function ChatPreviewModal({ open, onClose, config }: ChatPreviewModalProp
             {visibleCount >= messages.length ? (
               <button onClick={handleReplay} className="px-4 py-2 rounded-full text-sm text-white transition-all hover:scale-105"
                 style={{ backgroundColor: config.theme.primaryColor }}>
-                🔄 重播
+                <span className="flex items-center gap-1"><RefreshCw className="w-3 h-3" /> 重播</span>
               </button>
             ) : (
               <button onClick={() => { setPlaying(false); handleNext() }} className="px-4 py-2 rounded-full text-sm text-white transition-all hover:scale-105"

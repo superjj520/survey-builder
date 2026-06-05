@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, getProfile } from '@/lib/auth'
 import { GalleryImage, PLAN_LIMITS } from '@/lib/types'
 import { nanoid } from 'nanoid'
+import { X, Upload, Image, Loader2 } from 'lucide-react'
 
 const BUCKET = 'gallery'
 
@@ -138,9 +139,7 @@ export function GalleryModal({ open, onClose, onSelect }: GalleryModalProps) {
             <p className="text-xs text-gray-400 mt-0.5">{images.length} 张图片</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
 
@@ -150,14 +149,12 @@ export function GalleryModal({ open, onClose, onSelect }: GalleryModalProps) {
             <input type="file" accept="image/*" onChange={handleUpload} className="hidden" disabled={uploading} />
             {uploading ? (
               <span className="flex items-center gap-2 text-sm text-indigo-600">
-                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                <Loader2 className="w-4 h-4 animate-spin" />
                 上传中...
               </span>
             ) : (
               <>
-                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
+                <Upload className="w-5 h-5 text-gray-400" />
                 <span className="text-sm text-gray-500">点击或拖拽上传图片<span className="text-gray-300 ml-2">最大 5MB</span></span>
               </>
             )}
@@ -175,9 +172,7 @@ export function GalleryModal({ open, onClose, onSelect }: GalleryModalProps) {
           ) : images.length === 0 ? (
             <div className="text-center py-16 text-gray-400">
               <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-100 flex items-center justify-center">
-                <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
+                <Image className="w-8 h-8 text-gray-300" strokeWidth={1.5} />
               </div>
               <p className="font-medium mb-1">图库为空</p>
               <p className="text-sm text-gray-300">上传图片后可在问卷中使用</p>
@@ -248,9 +243,7 @@ export function ImagePicker({ value, onChange, label }: ImagePickerProps) {
           onClick={() => setShowGallery(true)}
           className="w-full h-20 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center gap-2 text-sm text-gray-400 hover:border-indigo-300 hover:text-indigo-500 transition-all active:scale-[0.98]"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
+          <Image className="w-4 h-4" />
           {label || '选择图片'}
         </button>
       )}

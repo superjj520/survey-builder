@@ -24,6 +24,13 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ImagePicker } from './Gallery'
 import { nanoid } from 'nanoid'
+import {
+  AlignJustify, PenLine, CircleDot, CheckSquare, ChevronsUpDown, Star,
+  BarChart3, SlidersHorizontal, Image, Paperclip, CalendarDays, Smartphone,
+  Mail, MapPin, Grid3X3, ArrowUpDown, PenTool, Mic, GripVertical,
+  ChevronUp, ChevronDown, Copy, Trash2, Plus, ArrowLeftRight, CheckCircle2,
+  User, MessageCircle, Phone, X, Heart, ThumbsUp
+} from 'lucide-react'
 
 // ===== Field Creation =====
 function createField(type: FieldType): SurveyField {
@@ -55,24 +62,24 @@ function createField(type: FieldType): SurveyField {
 }
 
 const FIELD_TYPES: { type: FieldType; icon: React.ReactNode; label: string; group: string }[] = [
-  { type: 'section', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h8m-8 6h16"/></svg>, label: '章节标题', group: '结构' },
-  { type: 'text', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>, label: '文本输入', group: '基础' },
-  { type: 'radio', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" strokeWidth={2}/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg>, label: '单选题', group: '基础' },
-  { type: 'checkbox', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3" strokeWidth={2}/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 12l3 3 5-5"/></svg>, label: '多选题', group: '基础' },
-  { type: 'select', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4"/></svg>, label: '下拉选择', group: '基础' },
-  { type: 'rating', icon: <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>, label: '评分', group: '评价' },
-  { type: 'nps', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>, label: 'NPS评分', group: '评价' },
-  { type: 'slider', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12h16"/><circle cx="14" cy="12" r="3" strokeWidth={2} fill="white"/></svg>, label: '滑块', group: '评价' },
-  { type: 'image_choice', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" strokeWidth={2}/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 16l5-5 4 4 5-5 4 4"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/></svg>, label: '图片选择', group: '高级' },
-  { type: 'file', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>, label: '文件上传', group: '高级' },
-  { type: 'date', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" strokeWidth={2}/><path strokeLinecap="round" strokeWidth={2} d="M16 2v4M8 2v4M3 10h18"/></svg>, label: '日期', group: '高级' },
-  { type: 'phone', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2" strokeWidth={2}/><circle cx="12" cy="18" r="1" fill="currentColor"/></svg>, label: '手机号', group: '联系' },
-  { type: 'email', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2" strokeWidth={2}/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M22 6l-10 7L2 6"/></svg>, label: '邮箱', group: '联系' },
-  { type: 'address', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>, label: '地址', group: '联系' },
-  { type: 'matrix', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18M10 3v18M14 3v18"/></svg>, label: '矩阵题', group: '高级' },
-  { type: 'ranking', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4 4m0 0l4-4m-4 4V4"/></svg>, label: '排序题', group: '高级' },
-  { type: 'signature', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>, label: '签名', group: '高级' },
-  { type: 'voice', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4M12 15a3 3 0 003-3V5a3 3 0 00-6 0v7a3 3 0 003 3z"/></svg>, label: '语音留言', group: '高级' },
+  { type: 'section', icon: <AlignJustify className="w-4 h-4" />, label: '章节标题', group: '结构' },
+  { type: 'text', icon: <PenLine className="w-4 h-4" />, label: '文本输入', group: '基础' },
+  { type: 'radio', icon: <CircleDot className="w-4 h-4" />, label: '单选题', group: '基础' },
+  { type: 'checkbox', icon: <CheckSquare className="w-4 h-4" />, label: '多选题', group: '基础' },
+  { type: 'select', icon: <ChevronsUpDown className="w-4 h-4" />, label: '下拉选择', group: '基础' },
+  { type: 'rating', icon: <Star className="w-4 h-4" />, label: '评分', group: '评价' },
+  { type: 'nps', icon: <BarChart3 className="w-4 h-4" />, label: 'NPS评分', group: '评价' },
+  { type: 'slider', icon: <SlidersHorizontal className="w-4 h-4" />, label: '滑块', group: '评价' },
+  { type: 'image_choice', icon: <Image className="w-4 h-4" />, label: '图片选择', group: '高级' },
+  { type: 'file', icon: <Paperclip className="w-4 h-4" />, label: '文件上传', group: '高级' },
+  { type: 'date', icon: <CalendarDays className="w-4 h-4" />, label: '日期', group: '高级' },
+  { type: 'phone', icon: <Smartphone className="w-4 h-4" />, label: '手机号', group: '联系' },
+  { type: 'email', icon: <Mail className="w-4 h-4" />, label: '邮箱', group: '联系' },
+  { type: 'address', icon: <MapPin className="w-4 h-4" />, label: '地址', group: '联系' },
+  { type: 'matrix', icon: <Grid3X3 className="w-4 h-4" />, label: '矩阵题', group: '高级' },
+  { type: 'ranking', icon: <ArrowUpDown className="w-4 h-4" />, label: '排序题', group: '高级' },
+  { type: 'signature', icon: <PenTool className="w-4 h-4" />, label: '签名', group: '高级' },
+  { type: 'voice', icon: <Mic className="w-4 h-4" />, label: '语音留言', group: '高级' },
 ]
 
 // ===== Sortable Field Card =====
@@ -142,12 +149,7 @@ function CollapsedFieldCard({ field, dragHandleProps }: { field: SurveyField; dr
     <div className={`bg-white rounded-lg border border-gray-200 hover:border-indigo-200 hover:shadow-sm transition-all cursor-pointer ${field.type === 'section' ? 'border-l-4 border-l-indigo-400' : ''}`}>
       <div className="flex items-center gap-3 px-4 py-3">
         <button {...dragHandleProps} className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/>
-            <circle cx="9" cy="10" r="1.5"/><circle cx="15" cy="10" r="1.5"/>
-            <circle cx="9" cy="15" r="1.5"/><circle cx="15" cy="15" r="1.5"/>
-            <circle cx="9" cy="20" r="1.5"/><circle cx="15" cy="20" r="1.5"/>
-          </svg>
+          <GripVertical className="w-5 h-5" />
         </button>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-gray-800 truncate">
@@ -162,10 +164,10 @@ function CollapsedFieldCard({ field, dragHandleProps }: { field: SurveyField; dr
         {/* Move buttons */}
         <div className="flex flex-col gap-0.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
           <button onClick={moveUp} disabled={isFirst} className="p-0.5 rounded hover:bg-gray-100 disabled:opacity-20 transition-colors">
-            <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7"/></svg>
+            <ChevronUp className="w-3.5 h-3.5 text-gray-400" />
           </button>
           <button onClick={moveDown} disabled={isLast} className="p-0.5 rounded hover:bg-gray-100 disabled:opacity-20 transition-colors">
-            <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
+            <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
           </button>
         </div>
       </div>
@@ -185,19 +187,14 @@ function ExpandedFieldCard({ field, dragHandleProps }: { field: SurveyField; dra
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100">
         <button {...dragHandleProps} className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 p-0.5">
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/>
-            <circle cx="9" cy="10" r="1.5"/><circle cx="15" cy="10" r="1.5"/>
-            <circle cx="9" cy="15" r="1.5"/><circle cx="15" cy="15" r="1.5"/>
-            <circle cx="9" cy="20" r="1.5"/><circle cx="15" cy="20" r="1.5"/>
-          </svg>
+          <GripVertical className="w-5 h-5" />
         </button>
         <div className="flex items-center gap-1">
           <button onClick={() => dispatch({ type: 'DUPLICATE_FIELD', payload: field.id })} className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded" title="复制">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+            <Copy className="w-4 h-4" />
           </button>
           <button onClick={() => dispatch({ type: 'REMOVE_FIELD', payload: field.id })} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded" title="删除">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+            <Trash2 className="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -287,9 +284,7 @@ function BranchLogicSection({ field }: { field: SurveyField }) {
   if (!expanded) {
     return (
       <button onClick={() => setExpanded(true)} className="text-xs text-gray-400 hover:text-indigo-500 flex items-center gap-1.5 py-1">
-        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-        </svg>
+        <ArrowLeftRight className="w-3.5 h-3.5" />
         {field.logic ? '编辑跳转逻辑' : '+ 添加跳转逻辑'}
       </button>
     )
@@ -324,9 +319,7 @@ function BranchLogicSection({ field }: { field: SurveyField }) {
     <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-amber-700 flex items-center gap-1.5">
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-          </svg>
+          <ArrowLeftRight className="w-3.5 h-3.5" />
           跳转逻辑
         </span>
         <button onClick={() => { update({ logic: undefined }); setExpanded(false) }} className="text-xs text-gray-400 hover:text-red-400">
@@ -426,7 +419,7 @@ function BranchLogicSection({ field }: { field: SurveyField }) {
       {/* Summary */}
       {field.logic?.show_if && (
         <div className="flex items-center gap-1.5 pt-2 border-t border-amber-200">
-          <svg className="w-3 h-3 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+          <CheckCircle2 className="w-3 h-3 text-green-500 flex-shrink-0" />
           <span className="text-[11px] text-gray-600">{getSummary()}</span>
         </div>
       )}
@@ -460,13 +453,13 @@ function TypeSpecificConfig({ field, update }: { field: SurveyField; update: (u:
       return <OptionsEditor options={field.options || []} onChange={(options) => update({ options })} fieldType={field.type} field={field} update={update} />
 
     case 'rating':
-      const RATING_ICONS = [
-        { value: 'star', label: '星星', preview: '★' },
-        { value: 'heart', label: '爱心', preview: '♥' },
-        { value: 'thumb', label: '点赞', preview: '👍' },
-        { value: 'check', label: '勾勾', preview: '✓' },
-        { value: 'dog', label: '小狗', preview: '🐕' },
-        { value: 'cat', label: '小猫', preview: '🐱' },
+      const RATING_ICONS: { value: string; label: string; preview: React.ReactNode }[] = [
+        { value: 'star', label: '星星', preview: <Star className="w-5 h-5" /> },
+        { value: 'heart', label: '爱心', preview: <Heart className="w-5 h-5" /> },
+        { value: 'thumb', label: '点赞', preview: <ThumbsUp className="w-5 h-5" /> },
+        { value: 'check', label: '勾勾', preview: <CheckCircle2 className="w-5 h-5" /> },
+        { value: 'dog', label: '小狗', preview: <span className="text-lg">🐕</span> },
+        { value: 'cat', label: '小猫', preview: <span className="text-lg">🐱</span> },
       ]
       return (
         <div className="space-y-3">
@@ -665,7 +658,7 @@ function OptionsEditor({ options, onChange, fieldType, field, update }: { option
             />
           )}
           {options.length > 1 && (
-            <button onClick={() => onChange(options.filter((_, idx) => idx !== i))} className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-red-400 transition-opacity">✕</button>
+            <button onClick={() => onChange(options.filter((_, idx) => idx !== i))} className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-red-400 transition-opacity"><X className="w-3 h-3" /></button>
           )}
         </div>
       ))}
@@ -697,6 +690,49 @@ function GuideSection({ field, update }: { field: SurveyField; update: (u: Parti
   )
 }
 
+// ===== Quick Field Templates =====
+const QUICK_TEMPLATES: { label: string; icon: string; lucideIcon?: React.ReactNode; create: () => SurveyField }[] = [
+  {
+    label: '性别',
+    icon: 'user',
+    create: () => ({ id: nanoid(8), type: 'radio', label: '你的性别', required: true, options: ['男', '女', '其他'] }),
+  },
+  {
+    label: '年龄段',
+    icon: 'calendar',
+    create: () => ({ id: nanoid(8), type: 'radio', label: '你的年龄段', required: true, options: ['18岁以下', '18-24岁', '25-34岁', '35-44岁', '45岁以上'] }),
+  },
+  {
+    label: '满意度',
+    icon: 'star',
+    create: () => ({ id: nanoid(8), type: 'rating', label: '请为本次体验打分', required: true, maxRating: 5, ratingIcon: 'star' }),
+  },
+  {
+    label: '推荐度',
+    icon: 'bar-chart',
+    create: () => ({ id: nanoid(8), type: 'nps', label: '你有多大可能向朋友推荐我们？', required: false, npsLeftLabel: '完全不会', npsRightLabel: '非常愿意' }),
+  },
+  {
+    label: '联系方式',
+    icon: 'phone',
+    create: () => ({ id: nanoid(8), type: 'phone', label: '你的手机号', required: false, placeholder: '请输入手机号' }),
+  },
+  {
+    label: '开放建议',
+    icon: 'message-circle',
+    create: () => ({ id: nanoid(8), type: 'text', label: '你有什么建议或想说的？', required: false, multiline: true, placeholder: '请自由发挥...' }),
+  },
+]
+
+const QUICK_ICON_MAP: Record<string, React.ReactNode> = {
+  'user': <User className="w-5 h-5" />,
+  'calendar': <CalendarDays className="w-5 h-5" />,
+  'star': <Star className="w-5 h-5" />,
+  'bar-chart': <BarChart3 className="w-5 h-5" />,
+  'phone': <Phone className="w-5 h-5" />,
+  'message-circle': <MessageCircle className="w-5 h-5" />,
+}
+
 // ===== Add Field Button =====
 function AddFieldButton() {
   const { state, dispatch } = useEditor()
@@ -709,13 +745,13 @@ function AddFieldButton() {
     })
   }, [])
 
-  const addField = (type: FieldType) => {
+  const addField = (type: FieldType, prebuilt?: SurveyField) => {
     const limits = PLAN_LIMITS[(plan as keyof typeof PLAN_LIMITS) || 'free']
     if (state.fields.length >= limits.fieldsPerSurvey) {
       alert(`已达题目上限（${limits.fieldsPerSurvey} 题），请升级到 Pro 版`)
       return
     }
-    dispatch({ type: 'ADD_FIELD', payload: createField(type) })
+    dispatch({ type: 'ADD_FIELD', payload: prebuilt || createField(type) })
     setOpen(false)
   }
 
@@ -729,13 +765,25 @@ function AddFieldButton() {
   return (
     <div className="relative flex justify-center">
       <button onClick={() => setOpen(!open)} className="w-12 h-12 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg flex items-center justify-center transition-transform active:scale-95">
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
+        <Plus className="w-6 h-6" strokeWidth={2.5} />
       </button>
 
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="absolute bottom-full mb-3 z-50 bg-white rounded-xl shadow-xl border p-4 w-[calc(100vw-3rem)] sm:w-72 max-h-80 overflow-y-auto left-1/2 -translate-x-1/2">
+            {/* Quick templates */}
+            <div className="mb-3">
+              <p className="text-xs text-gray-300 mb-1 px-1">常用题</p>
+              <div className="grid grid-cols-3 gap-1">
+                {QUICK_TEMPLATES.map(tpl => (
+                  <button key={tpl.label} onClick={() => { const f = tpl.create(); addField(f.type, f) }} className="flex flex-col items-center gap-1 px-2 py-2.5 text-xs rounded-lg hover:bg-indigo-50 hover:text-indigo-600 transition-colors text-gray-500">
+                    <span className="text-indigo-400">{QUICK_ICON_MAP[tpl.icon]}</span>
+                    <span>{tpl.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
             <p className="text-xs font-medium text-gray-400 mb-3">选择题目类型</p>
             {Object.entries(groups).map(([group, types]) => (
               <div key={group} className="mb-3">

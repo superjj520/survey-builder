@@ -1,6 +1,7 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useCallback } from 'react'
+import { Send } from 'lucide-react'
 import { ThemeSettings } from '@/lib/types'
 
 interface ChatInputProps {
@@ -26,7 +27,21 @@ export function ChatInput({
   theme,
   quickReplies,
 }: ChatInputProps) {
-  const inputRef = useRef<HTMLInputElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const handleInput = useCallback(() => {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight, 96)}px` // max 4 lines ~96px
+  }, [])
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      onSend()
+    }
+  }
 
   return (
     <>
@@ -63,30 +78,29 @@ export function ChatInput({
 
       {/* Input bar */}
       <div className={`flex-shrink-0 backdrop-blur-sm border-t px-4 py-3 safe-area-bottom ${isDarkScene ? 'bg-black/30 border-white/10' : 'bg-white/90 border-gray-100'}`}>
-        <div className="max-w-lg mx-auto flex items-center gap-2">
-          <input
-            ref={inputRef}
-            type="text"
+        <div className="max-w-lg mx-auto flex items-end gap-2">
+          <textarea
+            ref={textareaRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSend() } }}
+            onChange={(e) => { setInput(e.target.value); handleInput() }}
+            onKeyDown={handleKeyDown}
             placeholder={completed ? '对话已结束' : streaming ? `${roleName}正在回复...` : '输入消息...'}
             disabled={streaming || completed}
-            className={`flex-1 h-10 px-4 rounded-full border text-sm focus:outline-none transition-colors disabled:opacity-50 ${
+            rows={1}
+            className={`flex-1 min-h-[40px] max-h-24 px-4 py-2.5 rounded-2xl border text-sm resize-none focus:outline-none transition-all disabled:opacity-50 ${
               isDarkScene
                 ? 'bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-white/40'
                 : 'bg-gray-50 border-gray-200 text-gray-800 focus:border-indigo-300 focus:bg-white'
             }`}
+            style={{ lineHeight: '1.4' }}
           />
           <button
             onClick={() => onSend()}
             disabled={!input.trim() || streaming || completed}
-            className="w-10 h-10 rounded-full flex items-center justify-center transition-all disabled:opacity-30"
+            className="w-10 h-10 rounded-full flex items-center justify-center transition-all disabled:opacity-30 active:scale-90 hover:scale-105 flex-shrink-0"
             style={{ backgroundColor: theme.primaryColor }}
           >
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
+            <Send className="w-5 h-5 text-white" />
           </button>
         </div>
       </div>

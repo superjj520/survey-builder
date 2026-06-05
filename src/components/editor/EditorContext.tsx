@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useReducer, ReactNode } from 'react'
+import React, { createContext, useContext, useReducer, useCallback, useRef, ReactNode } from 'react'
 import { SurveyField, SurveySettings, DEFAULT_SETTINGS } from '@/lib/types'
 
 interface EditorState {
@@ -24,6 +24,8 @@ type EditorAction =
   | { type: 'UPDATE_SETTINGS'; payload: Partial<SurveySettings> }
   | { type: 'LOAD_SURVEY'; payload: { title: string; description: string; fields: SurveyField[]; settings: SurveySettings } }
   | { type: 'MARK_SAVED' }
+  | { type: 'UNDO' }
+  | { type: 'REDO' }
 
 const initialState: EditorState = {
   title: '未命名问卷',
@@ -33,6 +35,18 @@ const initialState: EditorState = {
   selectedFieldId: null,
   isDirty: false,
 }
+
+// Actions that should be recorded in history
+const HISTORY_ACTIONS = new Set(['ADD_FIELD', 'UPDATE_FIELD', 'REMOVE_FIELD', 'DUPLICATE_FIELD', 'REORDER_FIELDS', 'SET_TITLE', 'SET_DESCRIPTION', 'UPDATE_SETTINGS'])
+
+interface HistoryEntry {
+  title: string
+  description: string
+  fields: SurveyField[]
+  settings: SurveySettings
+}
+
+const MAX_HISTORY = 30
 
 function editorReducer(state: EditorState, action: EditorAction): EditorState {
   switch (action.type) {
@@ -84,12 +98,64 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
 const EditorContext = createContext<{
   state: EditorState
   dispatch: React.Dispatch<EditorAction>
+  undo: () => void
+  redo: () => void
+  canUndo: boolean
+  canRedo: boolean
 } | null>(null)
 
 export function EditorProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(editorReducer, initialState)
+  const [state, baseDispatch] = useReducer(editorReducer, initialState)
+  const historyRef = useRef<HistoryEntry[]>([])
+  const futureRef = useRef<HistoryEntry[]>([])
+  const skipHistoryRef = useRef(false)
+  const stateRef = useRef(state)
+  stateRef.current = state
+
+  const getSnapshot = (s: EditorState): HistoryEntry => ({
+    title: s.title, description: s.description, fields: s.fields, settings: s.settings,
+  })
+
+  const dispatch = useCallback((action: EditorAction) => {
+    if (action.type === 'UNDO' || action.type === 'REDO') {
+      // handled separately
+      return
+    }
+    if (HISTORY_ACTIONS.has(action.type) && !skipHistoryRef.current) {
+      // Save current state to history before applying action
+      historyRef.current = [...historyRef.current.slice(-MAX_HISTORY), getSnapshot(stateRef.current)]
+      futureRef.current = []
+    }
+    baseDispatch(action)
+  }, [])
+
+  const undo = useCallback(() => {
+    if (historyRef.current.length === 0) return
+    const prev = historyRef.current[historyRef.current.length - 1]
+    historyRef.current = historyRef.current.slice(0, -1)
+    futureRef.current = [...futureRef.current, getSnapshot(stateRef.current)]
+    skipHistoryRef.current = true
+    baseDispatch({ type: 'LOAD_SURVEY', payload: prev })
+    baseDispatch({ type: 'SET_TITLE', payload: prev.title }) // mark dirty
+    skipHistoryRef.current = false
+  }, [])
+
+  const redo = useCallback(() => {
+    if (futureRef.current.length === 0) return
+    const next = futureRef.current[futureRef.current.length - 1]
+    futureRef.current = futureRef.current.slice(0, -1)
+    historyRef.current = [...historyRef.current, getSnapshot(stateRef.current)]
+    skipHistoryRef.current = true
+    baseDispatch({ type: 'LOAD_SURVEY', payload: next })
+    baseDispatch({ type: 'SET_TITLE', payload: next.title }) // mark dirty
+    skipHistoryRef.current = false
+  }, [])
+
+  const canUndo = historyRef.current.length > 0
+  const canRedo = futureRef.current.length > 0
+
   return (
-    <EditorContext.Provider value={{ state, dispatch }}>
+    <EditorContext.Provider value={{ state, dispatch, undo, redo, canUndo, canRedo }}>
       {children}
     </EditorContext.Provider>
   )

@@ -2,6 +2,7 @@
 
 import { GameData, GAME_EMOJIS } from '@/lib/marker-parser'
 import { ThemeSettings } from '@/lib/types'
+import { MessageSquare, Target, Link2, PenLine, Sparkles, Clapperboard, Mail } from 'lucide-react'
 
 interface GameCardProps {
   game: GameData
@@ -27,7 +28,7 @@ export function GameCard({ game, isDarkScene, theme, onSend }: GameCardProps) {
                     color: i === 0 ? '#7c3aed' : '#db2777',
                   }}
                 >
-                  <div className="text-2xl mb-1">{i === 0 ? '💭' : '🎯'}</div>
+                  <div className="flex justify-center mb-1">{i === 0 ? <MessageSquare className="w-6 h-6" /> : <Target className="w-6 h-6" />}</div>
                   <div className="text-sm font-medium">{opt}</div>
                 </button>
               ))}
@@ -68,7 +69,7 @@ export function GameCard({ game, isDarkScene, theme, onSend }: GameCardProps) {
           )}
           {game.type === 'word_chain' && (
             <div className="text-center">
-              <div className="text-2xl mb-2">🔗</div>
+              <div className="flex justify-center mb-2"><Link2 className="w-6 h-6 text-indigo-500" /></div>
               <p className={`text-sm mb-2 font-medium ${isDarkScene ? 'text-white' : 'text-gray-700'}`}>词语接龙</p>
               <p className={`text-xs mb-3 ${isDarkScene ? 'text-gray-400' : 'text-gray-500'}`}>起始词：{game.data[0]}</p>
             </div>
@@ -76,7 +77,7 @@ export function GameCard({ game, isDarkScene, theme, onSend }: GameCardProps) {
           {game.type === 'quiz' && (
             <div>
               <div className="text-center mb-3">
-                <div className="text-2xl mb-1">📝</div>
+                <div className="flex justify-center mb-1"><PenLine className="w-6 h-6 text-indigo-500" /></div>
                 <p className={`text-sm font-medium ${isDarkScene ? 'text-white' : 'text-gray-700'}`}>{game.data[0]}</p>
               </div>
               <div className="space-y-2">
@@ -97,7 +98,7 @@ export function GameCard({ game, isDarkScene, theme, onSend }: GameCardProps) {
           )}
           {game.type === 'fortune' && (
             <div className="text-center">
-              <div className="text-3xl mb-2">🔮</div>
+              <div className="flex justify-center mb-2"><Sparkles className="w-8 h-8 text-purple-500" /></div>
               <p className={`text-sm font-medium mb-1 ${isDarkScene ? 'text-white' : 'text-gray-700'}`}>{game.data[0]}</p>
               <p className={`text-xs ${isDarkScene ? 'text-gray-400' : 'text-gray-500'}`}>{game.data[1]}</p>
               <button
@@ -109,14 +110,14 @@ export function GameCard({ game, isDarkScene, theme, onSend }: GameCardProps) {
           )}
           {game.type === 'roleplay' && (
             <div className="text-center">
-              <div className="text-2xl mb-2">🎬</div>
+              <div className="flex justify-center mb-2"><Clapperboard className="w-6 h-6 text-amber-500" /></div>
               <p className={`text-xs mb-1 ${isDarkScene ? 'text-gray-400' : 'text-gray-400'}`}>即兴表演</p>
               <p className={`text-sm font-medium ${isDarkScene ? 'text-white' : 'text-gray-700'}`}>{game.data[0]}</p>
             </div>
           )}
           {game.type === 'confession' && (
             <div className="text-center">
-              <div className="text-2xl mb-2">💌</div>
+              <div className="flex justify-center mb-2"><Mail className="w-6 h-6 text-pink-500" /></div>
               <p className={`text-xs mb-1 ${isDarkScene ? 'text-gray-400' : 'text-gray-400'}`}>心里话时间</p>
               <p className={`text-sm ${isDarkScene ? 'text-gray-300' : 'text-gray-600'}`}>{game.data[0]}</p>
             </div>

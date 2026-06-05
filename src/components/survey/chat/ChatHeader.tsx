@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { MoodType, MOOD_MAP } from '@/lib/marker-parser'
 import { ThemeSettings } from '@/lib/types'
 
@@ -30,6 +31,7 @@ export function ChatHeader({
   isDarkScene,
   theme,
 }: ChatHeaderProps) {
+  const [avatarError, setAvatarError] = useState(false)
   const moodData = MOOD_MAP[currentMood]
   const tierName = bondTier === 'intimate'
     ? (bondTierNames?.[2] || '知己')
@@ -42,17 +44,31 @@ export function ChatHeader({
     <div className={`flex-shrink-0 backdrop-blur-sm border-b px-4 py-3 safe-area-top ${isDarkScene ? 'bg-black/30 border-white/10' : 'bg-white/90 border-gray-100'}`}>
       <div className="flex items-center gap-3 max-w-lg mx-auto">
         <div className="relative">
-          <img
-            src={avatarUrl}
-            alt={roleName}
-            className={`w-11 h-11 rounded-full shadow-md bg-gray-100 transition-all duration-300 ${moodData.animation}`}
-            style={{
-              '--mood-color': moodData.color,
-              animationDuration: `${1.8 - currentMoodIntensity * 0.2}s`,
-              filter: currentMoodIntensity >= 3 ? `drop-shadow(0 0 ${currentMoodIntensity * 3}px ${moodData.color || theme.primaryColor})` : undefined,
-              border: currentMood !== 'neutral' ? `2.5px solid ${moodData.color}` : '2px solid transparent',
-            } as React.CSSProperties}
-          />
+          {avatarError ? (
+            <div
+              className={`w-11 h-11 rounded-full shadow-md flex items-center justify-center text-white font-medium text-lg ${moodData.animation}`}
+              style={{
+                '--mood-color': moodData.color,
+                background: `linear-gradient(135deg, ${theme.primaryColor}, #8b5cf6)`,
+                border: currentMood !== 'neutral' ? `2.5px solid ${moodData.color}` : '2px solid transparent',
+              } as React.CSSProperties}
+            >
+              {roleName.charAt(0)}
+            </div>
+          ) : (
+            <img
+              src={avatarUrl}
+              alt={roleName}
+              className={`w-11 h-11 rounded-full shadow-md bg-gray-100 transition-all duration-300 ${moodData.animation}`}
+              style={{
+                '--mood-color': moodData.color,
+                animationDuration: `${1.8 - currentMoodIntensity * 0.2}s`,
+                filter: currentMoodIntensity >= 3 ? `drop-shadow(0 0 ${currentMoodIntensity * 3}px ${moodData.color || theme.primaryColor})` : undefined,
+                border: currentMood !== 'neutral' ? `2.5px solid ${moodData.color}` : '2px solid transparent',
+              } as React.CSSProperties}
+              onError={() => setAvatarError(true)}
+            />
+          )}
           {currentMood !== 'neutral' && moodData.emoji && (
             <span className="absolute -bottom-1 -right-1 text-sm bg-white rounded-full w-6 h-6 flex items-center justify-center shadow-md animate-bounceIn" style={{ border: `1.5px solid ${moodData.color}` }}>
               {moodData.emoji}

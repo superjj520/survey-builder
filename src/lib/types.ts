@@ -96,6 +96,11 @@ export interface ScoreRange {
 export interface SurveySettings {
   displayMode: 'page' | 'step' | 'chat'
   password?: string
+  deadline?: string  // ISO date string, survey auto-closes after this
+  maxResponses?: number  // Max responses allowed
+  endingRedirectUrl?: string  // Custom redirect URL after submission
+  endingButtonText?: string  // Custom button text on ending page
+  endingFollowGuide?: string  // Follow/subscribe guide text
   theme: ThemeSettings
   scoringMode?: boolean
   scoreRanges?: ScoreRange[]
@@ -282,4 +287,35 @@ export const FIELD_TYPE_LABELS: Record<FieldType, string> = {
   email: '邮箱',
   image_choice: '图片选择',
   address: '地址',
+}
+
+export type TemplateCategory = 'personality' | 'social' | 'fun' | 'utility'
+
+export interface Template {
+  id: string
+  slug?: string
+  title: string
+  description: string
+  category: TemplateCategory
+  cover_image: string | null
+  tags: string[]
+  fields: SurveyField[]
+  settings: SurveySettings
+  use_count: number
+  is_featured: boolean
+  created_at: string
+}
+
+export const TEMPLATE_CATEGORIES: Record<TemplateCategory, string> = {
+  personality: '性格测试',
+  social: '情感社交',
+  fun: '趣味生活',
+  utility: '实用工具',
+}
+
+export const TEMPLATE_CATEGORY_COLORS: Record<TemplateCategory, string> = {
+  personality: '#8b5cf6',
+  social: '#ec4899',
+  fun: '#f59e0b',
+  utility: '#06b6d4',
 }
